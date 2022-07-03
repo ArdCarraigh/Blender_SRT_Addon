@@ -1,0 +1,68 @@
+{
+	"ELightingModel": "LIGHTING_MODEL_PER_VERTEX",
+	"VAmbientColor": {
+	  "x": 0,
+	  "y": 0,
+	  "z": 0
+	},
+	"EAmbientContrast": "EFFECT_OFF",
+	"FAmbientContrastFactor": 0,
+	"BAmbientOcclusion": false,
+	"VDiffuseColor": {
+	  "x": 0,
+	  "y": 0,
+	  "z": 0
+	},
+	"FDiffuseScalar": 0,
+	"BDiffuseAlphaMaskIsOpaque": false,
+	"EDetailLayer": "EFFECT_OFF",
+	"ESpecular": "EFFECT_OFF",
+	"FShininess": 0,
+	"VSpecularColor": {
+	  "x": 0,
+	  "y": 0,
+	  "z": 0
+	},
+	"ETransmission": "EFFECT_OFF",
+	"VTransmissionColor": {
+	  "x": 0,
+	  "y": 0,
+	  "z": 0
+	},
+	"FTransmissionShadowBrightness": 0,
+	"FTransmissionViewDependency": 0,
+	"EBranchSeamSmoothing": "EFFECT_OFF",
+	"FBranchSeamWeight": 0,
+	"ELodMethod": "LOD_METHOD_POP",
+	"BFadeToBillboard": false,
+	"BVertBillboard": false,
+	"BHorzBillboard": false,
+	"EShaderGenerationMode": "SHADER_GEN_MODE_STANDARD",
+	"BUsedAsGrass": false,
+	"EFaceCulling": "CULLTYPE_NONE",
+	"BBlending": false,
+	"EAmbientImageLighting": "EFFECT_OFF",
+	"EHueVariation": "EFFECT_OFF",
+	"EFogCurve": "FOG_CURVE_NONE",
+	"EFogColorStyle": "FOG_COLOR_TYPE_CONSTANT",
+	"BCastsShadows": false,
+	"BReceivesShadows": false,
+	"BShadowSmoothing": false,
+	"FAlphaScalar": 0,
+	"EWindLod": "WIND_LOD_NONE",
+	"ERenderPass": "RENDER_PASS_MAIN",
+	"BBranchesPresent": false,
+	"BFrondsPresent": false,
+	"BLeavesPresent": false,
+	"BFacingLeavesPresent": false,
+	"BRigidMeshesPresent": false,
+	"SVertexDecl": {
+	  "UiVertexSize": 0
+	},
+	"PDescription": {
+	  "Pad": 0
+	},
+	"PUserData": {
+	  "Pad": 0
+	}
+ }

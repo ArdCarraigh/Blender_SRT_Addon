@@ -1,0 +1,2385 @@
+{
+  "Extents": {
+    "m_cMin": [
+	  "{extentMin}"
+    ],
+    "m_cMax": [
+	  "{extentMax}"
+    ]
+  },
+  "LodProfile": {
+    "m_fHighDetail3dDistance": "{lodDist_HighDetail3D}",
+    "m_f3dRange": "{lodDist_Range3D}",
+    "m_fBillboardStartDistance": "{lodDist_StartBillboard}",
+    "m_fBillboardRange": "{lodDist_RangeBillboard}",
+    "m_fLowDetail3dDistance": "{lodDist_LowDetail3D}",
+    "m_fBillboardFinalDistance": "{lodDist_EndBillboard}",
+	"m_bLodIsPresent": "false"
+  },
+  "Wind": {
+    "Params": {
+      "m_fStrengthResponse": 6,
+      "m_fDirectionResponse": 6,
+      "m_fAnchorOffset": 0,
+      "m_fAnchorDistanceScale": 1,
+      "AfFrequencies": [
+        0,
+        0.104479998,
+        0.339652032,
+        0.583589017,
+        0.736176014,
+        0.754348993,
+        0.721744955,
+        0.631454051,
+        0.559386015,
+        0.855082989,
+        0,
+        0.278613031,
+        0.905739009,
+        1.55623996,
+        1.96314001,
+        2.00948,
+        1.90323997,
+        1.67541003,
+        1.58755004,
+        0.798368037,
+        0,
+        0.278613031,
+        0.905739009,
+        1.55623996,
+        1.96314001,
+        2.00948,
+        1.90323997,
+        1.67541003,
+        1.58755004,
+        0.798368037,
+        0,
+        0.335112005,
+        1.08576,
+        2.1614399,
+        3.52358007,
+        4.34302998,
+        4.43281984,
+        4.52260017,
+        4.61239004,
+        15.3745003,
+        0,
+        0.380487025,
+        1.25477004,
+        1.84838009,
+        1.97982001,
+        1.92262006,
+        1.79096997,
+        1.65224004,
+        1.56470001,
+        1.53999996,
+        0,
+        0.380487025,
+        1.25477004,
+        1.84838009,
+        1.97982001,
+        1.92262006,
+        1.79096997,
+        1.65224004,
+        1.56470001,
+        1.53999996,
+        0,
+        0.26809001,
+        0.868607998,
+        1.72915006,
+        2.81887007,
+        3.47442007,
+        3.54624987,
+        3.61808014,
+        3.68990993,
+        12.2995996,
+        0,
+        0.076097399,
+        0.250954002,
+        0.369676024,
+        0.395963013,
+        0.384523034,
+        0.358195007,
+        0.330448002,
+        0.312940001,
+        0.307999998,
+        0,
+        0.380487025,
+        1.25477004,
+        1.84838009,
+        1.97982001,
+        1.92262006,
+        1.79096997,
+        1.65224004,
+        1.56470001,
+        1.53999996,
+        0,
+        0.438012004,
+        0.994805098,
+        1.68044996,
+        2.51831007,
+        3.39813995,
+        4.12265015,
+        4.74445009,
+        5.09095001,
+        10.6275005
+      ],
+      "m_fGlobalHeight": 0.590107024,
+      "m_fGlobalHeightExponent": 1.60000002,
+      "AfGlobalDistance": [
+        0,
+        0.0130067002,
+        0.0564945005,
+        0.058685001,
+        0.0455486998,
+        0.0432131998,
+        0.0553940013,
+        0.0947635993,
+        0.165985018,
+        0.335612029
+      ],
+      "AfGlobalDirectionAdherence": [
+        0,
+        0.00290990015,
+        0.0160223991,
+        0.0579263009,
+        0.126955003,
+        0.169053003,
+        0.200347006,
+        0.224973992,
+        0.241092011,
+        0.420770019
+      ],
+      "AsBranch": [
+        {
+          "m_fTurbulence": 1,
+          "m_fTwitch": 0.75,
+          "m_fTwitchFreqScale": 0.300000012,
+          "AfDistance": [
+            0,
+            0.0131991003,
+            0.0566778965,
+            0.0570424981,
+            0.0447395965,
+            0.0419094972,
+            0.0630121976,
+            0.148201004,
+            0.18626301,
+            0.353276014
+          ],
+          "AfDirectionAdherence": [
+            0,
+            0.00113973999,
+            0.00484376028,
+            0.0116768004,
+            0.0225029979,
+            0.0408408009,
+            0.0695800036,
+            0.0810362995,
+            0.0935675949,
+            0.147002995
+          ],
+          "AfWhip": [
+            0.5,
+            0.444444001,
+            0.388889015,
+            0.333333015,
+            0.277778,
+            0.222222,
+            0.166667014,
+            0.111111,
+            0.0555556007,
+            0
+          ]
+        },
+        {
+          "m_fTurbulence": 1,
+          "m_fTwitch": 0.75,
+          "m_fTwitchFreqScale": 0.300000012,
+          "AfDistance": [
+            0,
+            0.0131991003,
+            0.0566778965,
+            0.0570424981,
+            0.0447395965,
+            0.0419094972,
+            0.0630121976,
+            0.148201004,
+            0.18626301,
+            0.353276014
+          ],
+          "AfDirectionAdherence": [
+            0,
+            0.00227949,
+            0.00968752056,
+            0.0233535003,
+            0.0450059958,
+            0.0816816017,
+            0.139160022,
+            0.162073016,
+            0.187135011,
+            0.290230036
+          ],
+          "AfWhip": [
+            0.5,
+            0.444444001,
+            0.388889015,
+            0.333333015,
+            0.277778,
+            0.222222,
+            0.166667014,
+            0.111111,
+            0.0555556007,
+            0
+          ]
+        }
+      ],
+      "AsLeaf": [
+        {
+          "m_fTwitchSharpness": 0.0500000045,
+          "m_fRollMaxScale": 1.20000005,
+          "m_fRollMinScale": 0.800000012,
+          "m_fRollSpeed": 0.300000012,
+          "m_fRollSeparation": 0.000164000012,
+          "m_fLeewardScalar": 0.5,
+          "AfRippleDistance": [
+            0,
+            0.00265085022,
+            0.0108135995,
+            0.0105579998,
+            0.00924065989,
+            0.00910948031,
+            0.0102279996,
+            0.0130105997,
+            0.0175687,
+            0.0134528987
+          ],
+          "AfTumbleFlip": [
+            0,
+            0.00925320014,
+            0.0377466977,
+            0.0368543006,
+            0.0322559997,
+            0.0317980982,
+            0.0357026011,
+            0.045415502,
+            0.0613263957,
+            0.0539009981
+          ],
+          "AfTumbleTwist": [
+            0,
+            0.00462660007,
+            0.018873401,
+            0.0184272006,
+            0.0161279999,
+            0.0158990007,
+            0.0178513005,
+            0.0227077994,
+            0.0306631979,
+            0.0234618988
+          ],
+          "AfTumbleDirectionAdherence": [
+            0,
+            0.00736655015,
+            0.0360816009,
+            0.0905457959,
+            0.147441998,
+            0.188461021,
+            0.215572998,
+            0.233120009,
+            0.243986025,
+            0.25
+          ],
+          "AfTwitchThrow": [
+            0,
+            0.00922258012,
+            0.0540445969,
+            0.0511236973,
+            0.0396278985,
+            0.038496498,
+            0.0619087964,
+            0.128857002,
+            0.165133998,
+            0.172788009
+          ]
+        },
+        {
+          "m_fTwitchSharpness": 0.0500000045,
+          "m_fRollMaxScale": 1.20000005,
+          "m_fRollMinScale": 0.800000012,
+          "m_fRollSpeed": 0.300000012,
+          "m_fRollSeparation": 0.000164000012,
+          "m_fLeewardScalar": 0.5,
+          "AfRippleDistance": [
+            0,
+            0.00265085022,
+            0.0108135995,
+            0.0105579998,
+            0.00924065989,
+            0.00910948031,
+            0.0102279996,
+            0.0130105997,
+            0.0175687,
+            0.0134528987
+          ],
+          "AfTumbleFlip": [
+            0,
+            0.0161930993,
+            0.0660567954,
+            0.0644949973,
+            0.0564480014,
+            0.0556465983,
+            0.0624794997,
+            0.0794771984,
+            0.107320994,
+            0.0943268016
+          ],
+          "AfTumbleTwist": [
+            0,
+            0.0161930993,
+            0.0660567954,
+            0.0644949973,
+            0.0564480014,
+            0.0556465983,
+            0.0624794997,
+            0.0794771984,
+            0.107320994,
+            0.082116805
+          ],
+          "AfTumbleDirectionAdherence": [
+            0,
+            0.00441993028,
+            0.0216489006,
+            0.0543275028,
+            0.0884652957,
+            0.113077,
+            0.129344001,
+            0.139872015,
+            0.146392003,
+            0.150000006
+          ],
+          "AfTwitchThrow": [
+            0,
+            0.00461129006,
+            0.0270222984,
+            0.0255618002,
+            0.019813899,
+            0.0192482993,
+            0.0309543982,
+            0.0644285008,
+            0.082566902,
+            0.0863938034
+          ]
+        }
+      ],
+      "AfFrondRippleDistance": [
+        0,
+        0.00162675011,
+        0.0038557502,
+        0.00599013036,
+        0.00728741009,
+        0.00757877063,
+        0.00730081042,
+        0.00600724015,
+        0.00512460014,
+        0.00974352006
+      ],
+      "m_fFrondRippleTile": 1,
+      "m_fFrondRippleLightingScalar": 1,
+      "m_fRollingNoiseSize": 0,
+      "m_fRollingNoiseTwist": 0,
+      "m_fRollingNoiseTurbulence": 0,
+      "m_fRollingNoisePeriod": 0,
+      "m_fRollingNoiseSpeed": 0,
+      "m_fRollingBranchFieldMin": 0,
+      "m_fRollingBranchLightingAdjust": 0,
+      "m_fRollingBranchVerticalOffset": 0,
+      "m_fRollingLeafRippleMin": 0,
+      "m_fRollingLeafTumbleMin": 0,
+      "m_fGustFrequency": 0.350000024,
+      "m_fGustStrengthMin": 0.25,
+      "m_fGustStrengthMax": 0.550000012,
+      "m_fGustDurationMin": -0.25,
+      "m_fGustDurationMax": 0.25,
+      "m_fGustRiseScalar": 0.75,
+      "m_fGustFallScalar": 0.5
+    },
+    "m_abOptions": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "m_afBranchWindAnchor": [
+      0.00235299999,
+      0.00066000002,
+      0.218140006
+    ],
+    "m_fMaxBranchLevel1Length": 0.80863297
+  },
+  "StringTable": [
+  ],
+  "CollisionObjects": [
+  ],
+  "VerticalBillboards": {
+    "FWidth": 0,
+    "FTopPos": 0,
+    "FBottomPos": 0,
+    "NNumBillboards": 0,
+    "PTexCoords": [
+    ],
+    "PRotated": [
+    ],
+    "NNumCutoutVertices": 0,
+    "PCutoutVertices": [
+    ],
+    "NNumCutoutIndices": 0,
+    "PCutoutIndices": [
+    ]
+  },
+  "HorizontalBillboard": {
+    "BPresent": false,
+    "AvPositions": [
+      {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    ],
+    "AfTexCoords": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1
+    ]
+  },
+  "PUserStrings": [
+  ],
+  "Geometry": {
+    "NNum3dRenderStates": "{totalMeshesNum}",
+    "BDepthOnlyIncluded": false,
+    "BShadowCastIncluded": true,
+    "StrShaderPath": "../../../../../bin/shaders/speedtree",
+    "P3dRenderStateMain": [
+	],
+    "P3dRenderStateDepth": [
+    ],
+    "P3dRenderStateShadow": [
+    ],
+    "ABillboardRenderStateMain": {
+      "ApTextures": [
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        }
+      ],
+      "ELightingModel": "LIGHTING_MODEL_DEFERRED",
+      "VAmbientColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "EAmbientContrast": "EFFECT_OFF",
+      "FAmbientContrastFactor": 0,
+      "BAmbientOcclusion": false,
+      "VDiffuseColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "FDiffuseScalar": 1,
+      "BDiffuseAlphaMaskIsOpaque": false,
+      "EDetailLayer": "EFFECT_OFF",
+      "ESpecular": "EFFECT_OFF",
+      "FShininess": 30,
+      "VSpecularColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "ETransmission": "EFFECT_OFF",
+      "VTransmissionColor": {
+        "x": 1,
+        "y": 1,
+        "z": 0
+      },
+      "FTransmissionShadowBrightness": 0.200000003,
+      "FTransmissionViewDependency": 0.5,
+      "EBranchSeamSmoothing": "EFFECT_OFF",
+      "FBranchSeamWeight": 1,
+      "ELodMethod": "LOD_METHOD_POP",
+      "BFadeToBillboard": true,
+      "BVertBillboard": true,
+      "BHorzBillboard": false,
+      "EShaderGenerationMode": "SHADER_GEN_MODE_STANDARD",
+      "BUsedAsGrass": false,
+      "EFaceCulling": "CULLTYPE_NONE",
+      "BBlending": false,
+      "EAmbientImageLighting": "EFFECT_OFF",
+      "EHueVariation": "EFFECT_OFF",
+      "EFogCurve": "FOG_CURVE_LINEAR",
+      "EFogColorStyle": "FOG_COLOR_TYPE_DYNAMIC",
+      "BCastsShadows": false,
+      "BReceivesShadows": false,
+      "BShadowSmoothing": false,
+      "FAlphaScalar": 1.39999998,
+      "EWindLod": "WIND_LOD_NONE",
+      "ERenderPass": "RENDER_PASS_MAIN",
+      "BBranchesPresent": false,
+      "BFrondsPresent": false,
+      "BLeavesPresent": false,
+      "BFacingLeavesPresent": false,
+      "BRigidMeshesPresent": false,
+      "SVertexDecl": {
+        "AsProperties": [
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_Z",
+              "VERTEX_COMPONENT_W"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              4,
+              8,
+              12
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS",
+              "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              16,
+              20,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          }
+        ],
+        "AsAttributes": [
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_Z",
+              "VERTEX_COMPONENT_W"
+            ],
+            "AuiOffsets": [
+              0,
+              4,
+              8,
+              12
+            ],
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_1",
+              "VERTEX_ATTRIB_1",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              16,
+              20,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          }
+        ],
+        "UiVertexSize": 24
+      },
+      "PDescription": {
+        "Pad": 0,
+        "Val": ""
+      },
+      "PUserData": {
+        "Pad": 0,
+        "Val": ""
+      },
+      "WolvenKit_AlignedBytes": [
+        0,
+        55,
+        0,
+        113,
+        244,
+        118,
+        0,
+        0,
+        87,
+        0,
+        0,
+        111,
+        0,
+        0,
+        244,
+        36,
+        0
+      ]
+    },
+    "ABillboardRenderStateDepth": {
+      "ELightingModel": "LIGHTING_MODEL_PER_VERTEX",
+      "VAmbientColor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "EAmbientContrast": "EFFECT_OFF",
+      "FAmbientContrastFactor": 0,
+      "BAmbientOcclusion": false,
+      "VDiffuseColor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "FDiffuseScalar": 0,
+      "BDiffuseAlphaMaskIsOpaque": false,
+      "EDetailLayer": "EFFECT_OFF",
+      "ESpecular": "EFFECT_OFF",
+      "FShininess": 0,
+      "VSpecularColor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "ETransmission": "EFFECT_OFF",
+      "VTransmissionColor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "FTransmissionShadowBrightness": 0,
+      "FTransmissionViewDependency": 0,
+      "EBranchSeamSmoothing": "EFFECT_OFF",
+      "FBranchSeamWeight": 0,
+      "ELodMethod": "LOD_METHOD_POP",
+      "BFadeToBillboard": false,
+      "BVertBillboard": false,
+      "BHorzBillboard": false,
+      "EShaderGenerationMode": "SHADER_GEN_MODE_STANDARD",
+      "BUsedAsGrass": false,
+      "EFaceCulling": "CULLTYPE_NONE",
+      "BBlending": false,
+      "EAmbientImageLighting": "EFFECT_OFF",
+      "EHueVariation": "EFFECT_OFF",
+      "EFogCurve": "FOG_CURVE_NONE",
+      "EFogColorStyle": "FOG_COLOR_TYPE_CONSTANT",
+      "BCastsShadows": false,
+      "BReceivesShadows": false,
+      "BShadowSmoothing": false,
+      "FAlphaScalar": 0,
+      "EWindLod": "WIND_LOD_NONE",
+      "ERenderPass": "RENDER_PASS_MAIN",
+      "BBranchesPresent": false,
+      "BFrondsPresent": false,
+      "BLeavesPresent": false,
+      "BFacingLeavesPresent": false,
+      "BRigidMeshesPresent": false,
+      "SVertexDecl": {
+        "UiVertexSize": 0
+      },
+      "PDescription": {
+        "Pad": 0
+      },
+      "PUserData": {
+        "Pad": 0
+      }
+    },
+    "ABillboardRenderStateShadow": {
+      "ApTextures": [
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        },
+        {
+          "Pad": 0,
+          "Val": ""
+        }
+      ],
+      "ELightingModel": "LIGHTING_MODEL_DEFERRED",
+      "VAmbientColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "EAmbientContrast": "EFFECT_OFF",
+      "FAmbientContrastFactor": 0,
+      "BAmbientOcclusion": false,
+      "VDiffuseColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "FDiffuseScalar": 1,
+      "BDiffuseAlphaMaskIsOpaque": false,
+      "EDetailLayer": "EFFECT_OFF",
+      "ESpecular": "EFFECT_OFF",
+      "FShininess": 30,
+      "VSpecularColor": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "ETransmission": "EFFECT_OFF",
+      "VTransmissionColor": {
+        "x": 1,
+        "y": 1,
+        "z": 0
+      },
+      "FTransmissionShadowBrightness": 0.200000003,
+      "FTransmissionViewDependency": 0.5,
+      "EBranchSeamSmoothing": "EFFECT_OFF",
+      "FBranchSeamWeight": 1,
+      "ELodMethod": "LOD_METHOD_POP",
+      "BFadeToBillboard": false,
+      "BVertBillboard": true,
+      "BHorzBillboard": false,
+      "EShaderGenerationMode": "SHADER_GEN_MODE_STANDARD",
+      "BUsedAsGrass": false,
+      "EFaceCulling": "CULLTYPE_NONE",
+      "BBlending": false,
+      "EAmbientImageLighting": "EFFECT_OFF",
+      "EHueVariation": "EFFECT_OFF",
+      "EFogCurve": "FOG_CURVE_LINEAR",
+      "EFogColorStyle": "FOG_COLOR_TYPE_DYNAMIC",
+      "BCastsShadows": false,
+      "BReceivesShadows": false,
+      "BShadowSmoothing": false,
+      "FAlphaScalar": 1.39999998,
+      "EWindLod": "WIND_LOD_NONE",
+      "ERenderPass": "RENDER_PASS_SHADOW_CAST",
+      "BBranchesPresent": false,
+      "BFrondsPresent": false,
+      "BLeavesPresent": false,
+      "BFacingLeavesPresent": false,
+      "BRigidMeshesPresent": false,
+      "SVertexDecl": {
+        "AsProperties": [
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION",
+              "VERTEX_PROPERTY_POSITION"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_Z",
+              "VERTEX_COMPONENT_W"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              4,
+              8,
+              12
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS",
+              "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              16,
+              20,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeProperties": [
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED",
+              "VERTEX_PROPERTY_UNASSIGNED"
+            ],
+            "AePropertyComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiVertexOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "UiStream": 0,
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          }
+        ],
+        "AsAttributes": [
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0",
+              "VERTEX_ATTRIB_0"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_Z",
+              "VERTEX_COMPONENT_W"
+            ],
+            "AuiOffsets": [
+              0,
+              4,
+              8,
+              12
+            ],
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_1",
+              "VERTEX_ATTRIB_1",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_X",
+              "VERTEX_COMPONENT_Y",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              16,
+              20,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_FULL_FLOAT"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          },
+          {
+            "AeAttribs": [
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED",
+              "VERTEX_ATTRIB_UNASSIGNED"
+            ],
+            "AeAttribComponents": [
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED",
+              "VERTEX_COMPONENT_UNASSIGNED"
+            ],
+            "AuiOffsets": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "EFormat": "VERTEX_FORMAT_UNASSIGNED"
+          }
+        ],
+        "UiVertexSize": 24
+      },
+      "PDescription": {
+        "Pad": 0,
+        "Val": ""
+      },
+      "PUserData": {
+        "Pad": 0,
+        "Val": ""
+      },
+      "WolvenKit_AlignedBytes": [
+        0,
+        55,
+        0,
+        113,
+        244,
+        118,
+        0,
+        0,
+        87,
+        0,
+        0,
+        111,
+        0,
+        0,
+        244,
+        36,
+        0
+      ]
+    },
+    "NNumLods": "{lodsNum}",
+    "PLods": [
+    ],
+    "SVertBBs": {
+      "FWidth": 0,
+      "FTopPos": 0,
+      "FBottomPos": 0,
+      "NNumBillboards": 0,
+      "NNumCutoutVertices": 0,
+      "NNumCutoutIndices": 0
+    },
+    "SHorzBB": {
+      "BPresent": false
+    }
+  },
+  "WolvenKit_AlignedBytes": [
+    0,
+    0,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    22,
+    64,
+    1,
+    0,
+    0
+  ],
+  "FileName": "{fileName}"
+}

@@ -1,0 +1,184 @@
+{
+	"VertexProperties": [
+	  {
+		"PropertyName": "VERTEX_PROPERTY_POSITION",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_NORMAL",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": true,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LOD_POSITION",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LEAF_CARD_CORNER",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LEAF_CARD_SELF_SHADOW_OFFSET",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_WIND_BRANCH_DATA",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_WIND_EXTRA_DATA",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_WIND_FLAGS",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LEAF_ANCHOR_POINT",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_BONE_ID",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_BRANCH_SEAM_DETAIL",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_DETAIL_TEXCOORDS",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_TANGENT",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": true,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_LIGHTMAP_TEXCOORDS",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_AMBIENT_OCCLUSION",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": true,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  },
+	  {
+		"PropertyName": "VERTEX_PROPERTY_PAD",
+		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
+		"UseFloatValuesForBytes": false,
+		"ValueCount": 0,
+		"FloatValues": [],
+		"ByteValues": [],
+		"ValueOffsets": []
+	  }
+	]
+}
