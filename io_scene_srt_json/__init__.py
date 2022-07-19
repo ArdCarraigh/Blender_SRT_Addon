@@ -85,7 +85,7 @@ class ExportSrtJson(Operator, ExportHelper):
             ('BillboardRandomTrees', "Random Trees", "Randomise tree billboard"),
             ('OFF', "No billboard", "Disable billboard entirely") 
         ),
-        default='BillboardRandomTrees',
+        default='BillboardRandomOff',
     )
     
     terrainNormals: BoolProperty(
@@ -105,7 +105,7 @@ class ExportSrtJson(Operator, ExportHelper):
     lodDist_HighDetail3D: FloatProperty(
         name="High Detail 3D Distance",
         description="Set the distance at which lod0 is no longer used",
-        default = 18,
+        default = 10,
         min = 1,
         max = 200
     )
@@ -113,7 +113,7 @@ class ExportSrtJson(Operator, ExportHelper):
     lodDist_LowDetail3D: FloatProperty(
         name="Low Detail 3D Distance",
         description="Set the distance at which lod2 gets used",
-        default = 34,
+        default = 30,
         min = 1,
         max = 200
     )
@@ -129,7 +129,7 @@ class ExportSrtJson(Operator, ExportHelper):
     lodDist_StartBillboard: FloatProperty(
         name="Billboard Start Distance",
         description="Set the distance at which billboard starts to get used",
-        default = 110,
+        default = 80,
         min = 1,
         max = 200
     )
@@ -137,7 +137,7 @@ class ExportSrtJson(Operator, ExportHelper):
     lodDist_EndBillboard: FloatProperty(
         name="Billboard End Distance",
         description="Set the distance at which billboard disappears",
-        default = 122,
+        default = 90,
         min = 1,
         max = 200
     )

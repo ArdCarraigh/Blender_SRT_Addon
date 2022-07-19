@@ -232,7 +232,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 srtDraw = json.load(drawfile)
                             if "DiffuseUV" in mesh.data.uv_layers:
                                 mesh.data.uv_layers.active = mesh.data.uv_layers["DiffuseUV"]
-                            mesh.data.calc_normals()
+                            mesh.data.calc_normals_split()
                             if len(mesh.data.uv_layers) > 0:
                                 mesh.data.calc_tangents()
                             # Get data per vertex
@@ -346,45 +346,40 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                         attributes += [attrib_name0]*3
                                         num_attrib += 1
                                     offset += 6
+                                # Lod position X
+                                if verts_lod:
+                                    srtVert["VertexProperties"][3]["ValueCount"] =  3
+                                    srtVert["VertexProperties"][3]["FloatValues"] =  verts_lod[i]
+                                    srtVert["VertexProperties"][3]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
+                                    srtVert["VertexProperties"][3]["ValueOffsets"] = [offset, offset + 6, offset + 8]
+                                    if properties[-1] != "END":
+                                        properties += ["VERTEX_PROPERTY_LOD_POSITION"] * 3
+                                        components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
+                                        offsets += [offset, offset + 6, offset + 8]
+                                        if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        num_attrib += 1
+                                        formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
+                                        attributes += [attrib_name0, attrib_name1, attrib_name1]
+                                    offset += 6
                                 # Diffuse UV
                                 if uvs_diff:
                                     srtVert["VertexProperties"][1]["ValueCount"] =  2
                                     srtVert["VertexProperties"][1]["FloatValues"] =  uvs_diff[i]
                                     srtVert["VertexProperties"][1]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
-                                    srtVert["VertexProperties"][1]["ValueOffsets"] = [offset, offset +2]
+                                    srtVert["VertexProperties"][1]["ValueOffsets"] = [offset-4, offset -2]
                                     if properties[-1] != "END":
-                                        properties += ["VERTEX_PROPERTY_DIFFUSE_TEXCOORDS"] * 2
-                                        components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y"]
-                                        offsets += [offset, offset +2]
-                                        formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 2
-                                        attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes += [attrib_name1]*2
-                                        num_attrib += 1
-                                    offset += 4
-                                # Lod position
-                                if verts_lod:
-                                    srtVert["VertexProperties"][3]["ValueCount"] =  3
-                                    srtVert["VertexProperties"][3]["FloatValues"] =  verts_lod[i]
-                                    srtVert["VertexProperties"][3]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
-                                    srtVert["VertexProperties"][3]["ValueOffsets"] = [offset, offset +2, offset + 4]
-                                    if properties[-1] != "END":
-                                        properties.insert(4,"VERTEX_PROPERTY_LOD_POSITION")
-                                        properties += ["VERTEX_PROPERTY_LOD_POSITION"]*2
-                                        components.insert(3,"VERTEX_COMPONENT_X")
-                                        components += ["VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
-                                        offsets.insert(3,offset)
-                                        offsets += [offset +2, offset + 4]
-                                        if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
+                                        properties [-2:-2] = ["VERTEX_PROPERTY_DIFFUSE_TEXCOORDS"] * 2
+                                        components [-2:-2] = ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y"]
+                                        offsets [-2:-2] = [offset-4, offset -2]
+                                        formats [-2:-2] = ["VERTEX_FORMAT_HALF_FLOAT"] * 2
                                         if attrib_name1 == "VERTEX_ATTRIB_UNASSIGNED":
                                             attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
                                             num_attrib += 1
-                                        formats.insert(3, "VERTEX_FORMAT_HALF_FLOAT")
-                                        formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 2
-                                        attributes.insert(3,attrib_name0)
-                                        attributes += [attrib_name1, attrib_name1]
-                                    offset += 6
+                                        attributes [-2:-2] = [attrib_name1]*2
+                                    offset += 4
                                 # Geometry Type
                                 if geom_types:
                                     srtVert["VertexProperties"][4]["ValueCount"] =  1
@@ -463,7 +458,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                         num_attrib += 1
                                     offset += 4
                                 # Detail UV
-                                if uvs_det:
+                                if uvs_det and geom_types[0] == 0:
                                     srtVert["VertexProperties"][15]["ValueCount"] =  2
                                     srtVert["VertexProperties"][15]["FloatValues"] =  uvs_det[i]
                                     srtVert["VertexProperties"][15]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -583,13 +578,6 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 
                                 srtDraw["PVertexData"].append(srtVert)
                             
-                            with open("C:/Users/admin/Desktop/Blender_srt_addon/debug.txt", 'w', encoding = 'utf-8') as f:
-                                f.write("geom_types")
-                                f.write(mesh.name)
-                                f.write(" ".join(map(str,geom_types)))
-                                f.write(" ".join(map(str,wind_weight1)))
-                                f.write(str(len(components)))
-                            
                             # Write data per mesh
                             srtDraw["NNumVertices"] = len(verts)
                             srtDraw["NRenderStateIndex"] = mesh_index
@@ -654,13 +642,15 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                                         textures_names.append(mesh_transmission)
                             if ambients:
                                 srtDraw["PRenderState"]["BAmbientOcclusion"] = True
-                                srtDraw["PRenderState"]["EAmbientContrast"] = "EFFECT_OFF_X_ON"
+                                #srtDraw["PRenderState"]["EAmbientContrast"] = "EFFECT_OFF_X_ON"
                             if seam_blending:
                                 srtDraw["PRenderState"]["EBranchSeamSmoothing"] = "EFFECT_OFF_X_ON"
                             if child_coll == main_coll.collection.children[-1]:
                                 srtDraw["PRenderState"]["BFadeToBillboard"] = True
                             if grass == True:
                                 srtDraw["PRenderState"]["BUsedAsGrass"] = True
+                            if geom_types[0] == 0:
+                                srtDraw["PRenderState"]["EFaceCulling"] = "CULLTYPE_BACK"
                                 
                             # Properties
                             prop_index = 0

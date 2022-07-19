@@ -297,12 +297,38 @@ def read_srt_json(context, filepath):
             tex_names = []
             tex_paths = []        
             
-            #For each texture
+            # For each texture
             for tex in mesh_call["PRenderState"]["ApTextures"]:
                 tex_name = tex["Val"]
                 tex_names.append(tex_name)
                 tex_path = os.path.dirname(filepath) + "\\" + tex_name
                 tex_paths.append(tex_path)
+            
+            # Material Data
+            ambientColor = [mesh_call["PRenderState"]["VAmbientColor"]["x"],
+                            mesh_call["PRenderState"]["VAmbientColor"]["y"],
+                            mesh_call["PRenderState"]["VAmbientColor"]["z"], 1]
+            ambientContrastFactor = mesh_call["PRenderState"]["FAmbientContrastFactor"]
+            diffuseColor = [mesh_call["PRenderState"]["VDiffuseColor"]["x"],
+                            mesh_call["PRenderState"]["VDiffuseColor"]["y"],
+                            mesh_call["PRenderState"]["VDiffuseColor"]["z"], 1]
+            diffuseScalar = mesh_call["PRenderState"]["FDiffuseScalar"]
+            shininess = mesh_call["PRenderState"]["FShininess"]
+            specularColor = [mesh_call["PRenderState"]["VSpecularColor"]["x"],
+                            mesh_call["PRenderState"]["VSpecularColor"]["y"],
+                            mesh_call["PRenderState"]["VSpecularColor"]["z"], 1]
+            transmissionColor = [mesh_call["PRenderState"]["VTransmissionColor"]["x"],
+                            mesh_call["PRenderState"]["VTransmissionColor"]["y"],
+                            mesh_call["PRenderState"]["VTransmissionColor"]["z"], 1]
+            transmissionShadowBrightness = mesh_call["PRenderState"]["FTransmissionShadowBrightness"]
+            transmissionViewDependency = mesh_call["PRenderState"]["FTransmissionViewDependency"]
+            branchSeamWeight = mesh_call["PRenderState"]["FBranchSeamWeight"]
+            alphaScalar = mesh_call["PRenderState"]["FAlphaScalar"]
+            cullType = mesh_call["PRenderState"]["EFaceCulling"]
+            ambientContrast_bool = mesh_call["PRenderState"]["EAmbientContrast"]
+            specular_bool = mesh_call["PRenderState"]["ESpecular"]
+            transmission_bool = mesh_call["PRenderState"]["ETransmission"]
+            seamSmoothing_bool = mesh_call["PRenderState"]["EBranchSeamSmoothing"]
 
             # For each vertex
             for k in range(nverts):
@@ -422,13 +448,18 @@ def read_srt_json(context, filepath):
                         mesh.uv_layers["SeamDetailUV"].data[loop_idx].uv = (branches_seam_det[vert_idx][0], 1-branches_seam_det[vert_idx][1])
                         
             # Tangent and Normals #Looks like this part is kinda useless
-            mesh.calc_normals()
-            for k in range(len(mesh.vertices)):
-                mesh.vertices[k].normal = normals[k]
-            mesh.calc_tangents()
-            for face in mesh.polygons:
-                for vert in [mesh.loops[k] for k in face.loop_indices]:
-                    vert.normal = normals[vert.vertex_index]
+            #mesh.calc_normals()
+            #for k in range(len(mesh.vertices)):
+                #mesh.vertices[k].normal = normals[k]
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            mesh.normals_split_custom_set_from_vertices(normals)
+            mesh.use_auto_smooth = True
+            #mesh.calc_tangents()
+            #for face in mesh.polygons:
+                #for vert in [mesh.loops[k] for k in face.loop_indices]:
+                    #vert.normal = normals[vert.vertex_index]
                     #Read-only... :(
                     #vert.tangent = tangents3[vert.vertex_index]
                     #vert.bitangent_sign = bitangent_sign0[vert.vertex_index]
@@ -484,8 +515,13 @@ def read_srt_json(context, filepath):
             temp_mat.diffuse_color = (*colorsys.hsv_to_rgb(random.random(), .7, .9), 1) #random hue more pleasing than random rgb
             temp_mat.use_nodes = True
             temp_mat.blend_method = 'CLIP'
+            temp_mat.shadow_method = 'CLIP'
+            if cullType == "CULLTYPE_BACK":
+                temp_mat.use_backface_culling = True
             node_main = temp_mat.node_tree.nodes[0]
             node_main.inputs["Specular"].default_value = 0
+            node_main.inputs["Roughness"].default_value = 1.0
+            node_main.location = (700, 300)   
             
             # Apply textures #
                 
@@ -504,33 +540,6 @@ def read_srt_json(context, filepath):
                 temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_main.inputs["Alpha"])
                 node_diff.location = (-1000, 1100)
                 node_uv_diff.location = (-2000, 1100)
-                
-            # Branch seam diffuse
-            if tex_names[0] and uvs_diff and branches_seam_diff:
-                node_seam_blending = temp_mat.node_tree.nodes.new(type = 'ShaderNodeVertexColor')
-                node_seam_blending.layer_name = 'SeamBlending'
-                node_uv_seam_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeUVMap')
-                node_uv_seam_diff.uv_map = "SeamDiffuseUV"
-                node_seam_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
-                node_seam_diff.name = "Branch Seam Diffuse Texture"
-                if tex_names[0] in bpy.data.images:
-                    node_seam_diff.image = bpy.data.images[tex_names[0]]
-                temp_mat.node_tree.links.new(node_uv_seam_diff.outputs["UV"], node_seam_diff.inputs["Vector"])
-                node_mix_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
-                node_mix_diff_alpha = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
-                temp_mat.node_tree.links.new(node_diff.outputs["Color"], node_mix_diff.inputs["Color2"])
-                temp_mat.node_tree.links.new(node_seam_diff.outputs["Color"], node_mix_diff.inputs["Color1"])
-                temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_mix_diff_alpha.inputs["Color2"])
-                temp_mat.node_tree.links.new(node_seam_diff.outputs["Alpha"], node_mix_diff_alpha.inputs["Color1"])
-                temp_mat.node_tree.links.new(node_seam_blending.outputs["Color"], node_mix_diff.inputs["Fac"])
-                temp_mat.node_tree.links.new(node_seam_blending.outputs["Color"], node_mix_diff_alpha.inputs["Fac"])
-                temp_mat.node_tree.links.new(node_mix_diff.outputs["Color"], node_main.inputs["Base Color"])
-                temp_mat.node_tree.links.new(node_mix_diff_alpha.outputs["Color"], node_main.inputs["Alpha"])
-                node_seam_diff.location = (-1000, 1400)
-                node_uv_seam_diff.location = (-2000, 1400)
-                node_seam_blending.location = (-2000, 900)
-                node_mix_diff.location = (-700, 1400)
-                node_mix_diff_alpha.location = (-700, 1000)
                 
             # Normal
             if tex_names[1] and uvs_diff:
@@ -556,6 +565,164 @@ def read_srt_json(context, filepath):
                 node_normal2.location = (-1200, -400)
                 node_normal3.location = (-500, -100)
                 node_normal4.location = (-300, -100)
+                
+            # Specular
+            if tex_names[4] and uvs_diff:
+                if os.path.exists(tex_paths[4]):
+                    bpy.ops.image.open(filepath = tex_paths[4])
+                node_spec = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
+                node_spec.name = "Specular Texture"
+                if tex_names[4] in bpy.data.images:
+                    node_spec.image = bpy.data.images[tex_names[4]]
+                    node_spec.image.colorspace_settings.name='Non-Color'
+                temp_mat.node_tree.links.new(node_uv_diff.outputs["UV"], node_spec.inputs["Vector"])
+                temp_mat.node_tree.links.new(node_spec.outputs["Color"], node_main.inputs["Specular"])
+                if tex_names[5]:
+                    temp_mat.node_tree.links.new(node_spec.outputs["Alpha"], node_main.inputs["Transmission"])
+                node_spec.location = (-1000, -1800)
+                
+            # Add Color Sets data to the material
+            #Nodes
+            node_light_path = temp_mat.node_tree.nodes.new(type = 'ShaderNodeLightPath')
+            node_light_path.location = (-400, 2000)
+            
+            node_rgb_diffuseColor = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGB')
+            node_rgb_diffuseColor.name = 'Diffuse Color'
+            node_rgb_diffuseColor.outputs['Color'].default_value = diffuseColor
+            node_rgb_diffuseColor.location = (-200, 750)
+            node_diffuseScalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeValue')
+            node_diffuseScalar.name = 'Diffuse Scalar'
+            node_diffuseScalar.outputs['Value'].default_value = diffuseScalar
+            node_diffuseScalar.location = (-200, 500)
+            node_diffuseScalar2 = temp_mat.node_tree.nodes.new(type = 'ShaderNodeBrightContrast')
+            node_diffuseScalar2.location = (0, 650)
+            node_mix_diffuseScalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+            node_mix_diffuseScalar.blend_type = 'OVERLAY'
+            node_mix_diffuseScalar.location = (200, 650)
+            
+            node_shader_mix_specular = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixShader')
+            node_shader_mix_specular.inputs['Fac'].default_value = 0.1
+            node_shader_mix_specular.location = (1500, 300)
+            node_rgb_specularColor = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGB')
+            node_rgb_specularColor.name = 'Specular Color'
+            node_rgb_specularColor.outputs['Color'].default_value = specularColor
+            node_rgb_specularColor.location = (500, 1000)
+            node_mix_specular_alpha = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+            node_mix_specular_alpha.inputs['Fac'].default_value = 1
+            node_mix_specular_alpha.blend_type = 'MULTIPLY'
+            node_mix_specular_alpha.location = (700, 1000)
+            node_shininess = temp_mat.node_tree.nodes.new(type = 'ShaderNodeValue')
+            node_shininess.name = 'Shininess'
+            node_shininess.outputs['Value'].default_value = shininess
+            node_shininess.location = (400, 800)
+            node_map_range_shininess = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMapRange')
+            node_map_range_shininess.inputs['From Max'].default_value = 100.0
+            node_map_range_shininess.location = (600, 800)
+            node_invert_shininess = temp_mat.node_tree.nodes.new(type = 'ShaderNodeInvert')
+            node_invert_shininess.location = (800, 800)
+            node_shader_specular = temp_mat.node_tree.nodes.new(type = 'ShaderNodeEeveeSpecular')
+            node_shader_specular.inputs['Base Color'].default_value = (0,0,0,0)
+            node_shader_specular.inputs['Specular'].default_value = (0,0,0,0)
+            node_shader_specular.inputs['Emissive Color'].default_value = (0,0,0,0)
+            node_shader_specular.inputs['Roughness'].default_value = 1
+            node_shader_specular.location = (1000, 1000)
+            node_invert_diffuse_alpha = temp_mat.node_tree.nodes.new(type = 'ShaderNodeInvert')
+            node_invert_diffuse_alpha.location = (600, 550)
+            
+            #node_rgb_ambientColor = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGB')
+            #node_rgb_ambientColor.name = 'Ambient Color'
+            #node_rgb_ambientColor.outputs['Color'].default_value = ambientColor
+            #node_rgb_ambientColor.location = (100, 1250)
+            #node_rgb_transmissionColor = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGB')
+            #node_rgb_transmissionColor.name = 'Transmission Color'
+            #node_rgb_transmissionColor.outputs['Color'].default_value = transmissionColor
+            #node_rgb_transmissionColor.location = (500, 600)
+            #node_ambientContrast = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+            #node_ambientContrast.name = 'Ambient Contrast'
+            #if re.search("ON", ambientContrast_bool):
+                #node_ambientContrast.blend_type = 'DARKEN'
+            #node_ambientContrast.inputs['Fac'].default_value = ambientContrastFactor
+            #node_ambientContrast.location = (500, 1350)
+            
+            node_shadow_brightness = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+            node_shadow_brightness.name = 'Shadow Brightness'
+            node_shadow_brightness.inputs['Fac'].default_value = 0
+            node_shadow_brightness.location = (1300, -200)
+            node_shadow_shader = temp_mat.node_tree.nodes.new(type = 'ShaderNodeBsdfTransparent')
+            node_shadow_shader.location = (1500, -100)
+            node_shader_mix_shadow = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixShader')
+            node_shader_mix_shadow.location = (1750, 300)
+            
+            #Links
+            temp_mat.node_tree.links.new(node_diffuseScalar.outputs["Value"], node_diffuseScalar2.inputs["Bright"])
+            temp_mat.node_tree.links.new(node_diffuseScalar.outputs["Value"], node_diffuseScalar2.inputs["Contrast"])
+            temp_mat.node_tree.links.new(node_rgb_diffuseColor.outputs["Color"], node_diffuseScalar2.inputs["Color"])
+            temp_mat.node_tree.links.new(node_diffuseScalar2.outputs["Color"], node_mix_diffuseScalar.inputs["Color2"])
+            temp_mat.node_tree.links.new(node_diff.outputs["Color"], node_mix_diffuseScalar.inputs["Color1"])
+            temp_mat.node_tree.links.new(node_mix_diffuseScalar.outputs["Color"], node_main.inputs["Base Color"])
+            
+            #temp_mat.node_tree.links.new(node_rgb_ambientColor.outputs["Color"], node_ambientContrast.inputs["Color2"])
+            #temp_mat.node_tree.links.new(node_ambientContrast.outputs["Color"], node_shader_specular.inputs["Base Color"])
+            
+            temp_mat.node_tree.links.new(node_rgb_specularColor.outputs["Color"], node_mix_specular_alpha.inputs["Color2"])
+            if tex_names[4]:
+                    temp_mat.node_tree.links.new(node_spec.outputs["Color"], node_mix_specular_alpha.inputs["Color1"])
+            temp_mat.node_tree.links.new(node_shininess.outputs["Value"], node_map_range_shininess.inputs["Value"])
+            temp_mat.node_tree.links.new(node_map_range_shininess.outputs["Result"], node_invert_shininess.inputs["Color"])
+            if re.search("ON", specular_bool):
+                temp_mat.node_tree.links.new(node_mix_specular_alpha.outputs["Color"], node_shader_specular.inputs["Specular"])
+                temp_mat.node_tree.links.new(node_invert_shininess.outputs["Color"], node_shader_specular.inputs["Roughness"])
+            temp_mat.node_tree.links.new(node_invert_diffuse_alpha.outputs["Color"], node_shader_specular.inputs["Transparency"])
+            
+            if re.search("ON", transmission_bool):
+                #temp_mat.node_tree.links.new(node_rgb_transmissionColor.outputs["Color"], node_shader_specular.inputs["Emissive Color"])
+                #temp_mat.node_tree.links.new(node_rgb_transmissionColor.outputs["Color"], node_shader_specular.inputs["Emissive Color"])
+                node_shadow_brightness.inputs['Fac'].default_value = transmissionShadowBrightness
+                if tex_names[5]:
+                    temp_mat.node_tree.links.new(node_spec.outputs["Alpha"], node_shadow_brightness.inputs["Color2"])
+            temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_invert_diffuse_alpha.inputs["Color"])
+            temp_mat.node_tree.links.new(node_invert_diffuse_alpha.outputs["Color"], node_shadow_brightness.inputs["Color1"])
+            temp_mat.node_tree.links.new(node_shadow_brightness.outputs["Color"], node_shadow_shader.inputs["Color"])
+            
+            temp_mat.node_tree.links.new(node_main.outputs["BSDF"], node_shader_mix_specular.inputs[1])
+            temp_mat.node_tree.links.new(node_shader_specular.outputs["BSDF"], node_shader_mix_specular.inputs[2])
+            temp_mat.node_tree.links.new(node_shader_mix_specular.outputs["Shader"], node_shader_mix_shadow.inputs[1])
+            temp_mat.node_tree.links.new(node_shadow_shader.outputs["BSDF"], node_shader_mix_shadow.inputs[2])
+            #temp_mat.node_tree.links.new(node_shader_specular.outputs["BSDF"], node_shader_mix.inputs[1])
+            
+            #temp_mat.node_tree.links.new(node_shader_mix.outputs["Shader"], node_shader_mix_shadow.inputs[1])
+            temp_mat.node_tree.links.new(node_light_path.outputs["Is Shadow Ray"], node_shader_mix_shadow.inputs[0])
+            temp_mat.node_tree.links.new(node_shader_mix_shadow.outputs["Shader"], temp_mat.node_tree.nodes["Material Output"].inputs["Surface"])
+        
+            temp_mat.node_tree.nodes["Material Output"].location = (2000, 300)
+            
+            # Branch seam diffuse
+            if tex_names[0] and uvs_diff and branches_seam_diff:
+                node_seam_blending = temp_mat.node_tree.nodes.new(type = 'ShaderNodeVertexColor')
+                node_seam_blending.layer_name = 'SeamBlending'
+                node_uv_seam_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeUVMap')
+                node_uv_seam_diff.uv_map = "SeamDiffuseUV"
+                node_seam_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
+                node_seam_diff.name = "Branch Seam Diffuse Texture"
+                if tex_names[0] in bpy.data.images:
+                    node_seam_diff.image = bpy.data.images[tex_names[0]]
+                temp_mat.node_tree.links.new(node_uv_seam_diff.outputs["UV"], node_seam_diff.inputs["Vector"])
+                node_mix_diff = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+                node_mix_diff_alpha = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+                temp_mat.node_tree.links.new(node_diff.outputs["Color"], node_mix_diff.inputs["Color2"])
+                temp_mat.node_tree.links.new(node_seam_diff.outputs["Color"], node_mix_diff.inputs["Color1"])
+                temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_mix_diff_alpha.inputs["Color2"])
+                temp_mat.node_tree.links.new(node_seam_diff.outputs["Alpha"], node_mix_diff_alpha.inputs["Color1"])
+                temp_mat.node_tree.links.new(node_seam_blending.outputs["Color"], node_mix_diff.inputs["Fac"])
+                temp_mat.node_tree.links.new(node_seam_blending.outputs["Color"], node_mix_diff_alpha.inputs["Fac"])
+                temp_mat.node_tree.links.new(node_mix_diff.outputs["Color"], node_mix_diffuseScalar.inputs["Color1"])
+                temp_mat.node_tree.links.new(node_mix_diff_alpha.outputs["Color"], node_main.inputs["Alpha"])
+                temp_mat.node_tree.links.new(node_mix_diff_alpha.outputs["Color"], node_invert_diffuse_alpha.inputs["Color"])
+                node_seam_diff.location = (-1000, 1400)
+                node_uv_seam_diff.location = (-2000, 1400)
+                node_seam_blending.location = (-2000, 900)
+                node_mix_diff.location = (-700, 1400)
+                node_mix_diff_alpha.location = (-700, 1000)
                 
             # Branch seam normal
             if tex_names[1] and uvs_diff and branches_seam_diff:
@@ -583,22 +750,7 @@ def read_srt_json(context, filepath):
                 node_seam_normal2.location = (-1200, -100)
                 node_mix_normal.location = (-900, -100)
                 node_mix_normal_alpha.location = (-900, -400)
-                
-            # Specular
-            if tex_names[4] and uvs_diff:
-                if os.path.exists(tex_paths[4]):
-                    bpy.ops.image.open(filepath = tex_paths[4])
-                node_spec = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
-                node_spec.name = "Specular Texture"
-                if tex_names[4] in bpy.data.images:
-                    node_spec.image = bpy.data.images[tex_names[4]]
-                    node_spec.image.colorspace_settings.name='Non-Color'
-                temp_mat.node_tree.links.new(node_uv_diff.outputs["UV"], node_spec.inputs["Vector"])
-                temp_mat.node_tree.links.new(node_spec.outputs["Color"], node_main.inputs["Specular"])
-                if tex_names[5]:
-                    temp_mat.node_tree.links.new(node_spec.outputs["Alpha"], node_main.inputs["Transmission"])
-                node_spec.location = (-1000, -1800)
-                
+
             # Branch seam specular
             if tex_names[4] and uvs_diff and branches_seam_diff:
                 node_seam_spec = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
@@ -617,6 +769,9 @@ def read_srt_json(context, filepath):
                 temp_mat.node_tree.links.new(node_seam_blending.outputs["Color"], node_mix_spec_alpha.inputs["Fac"])
                 temp_mat.node_tree.links.new(node_mix_spec.outputs["Color"], node_main.inputs["Specular"])
                 temp_mat.node_tree.links.new(node_mix_spec_alpha.outputs["Color"], node_main.inputs["Transmission"])
+                temp_mat.node_tree.links.new(node_mix_spec.outputs["Color"], node_mix_specular_alpha.inputs["Color1"])
+                if re.search("ON", transmission_bool):
+                    temp_mat.node_tree.links.new(node_mix_spec_alpha.outputs["Color"], node_shadow_brightness.inputs["Color2"])
                 node_seam_spec.location = (-1000, -1500)
                 node_mix_spec.location = (-700, -1500)
                 node_mix_spec_alpha.location = (-700, -1800)
@@ -636,10 +791,33 @@ def read_srt_json(context, filepath):
                 temp_mat.node_tree.links.new(node_diff.outputs["Color"], node_mix_diff_det.inputs["Color1"])
                 temp_mat.node_tree.links.new(node_det.outputs["Color"], node_mix_diff_det.inputs["Color2"])
                 temp_mat.node_tree.links.new(node_det.outputs["Alpha"], node_mix_diff_det.inputs["Fac"])
-                temp_mat.node_tree.links.new(node_mix_diff_det.outputs["Color"], node_main.inputs["Base Color"])
+                temp_mat.node_tree.links.new(node_mix_diff_det.outputs["Color"], node_mix_diffuseScalar.inputs["Color1"])
                 node_det.location = (-1000, 340)
                 node_uv_det.location = (-2000, 340)
-                node_mix_diff_det.location = (-300, 600)
+                node_mix_diff_det.location = (-450, 600)
+                
+            # Detail normal
+            if tex_names[3] and uvs_det:
+                if os.path.exists(tex_paths[3]):
+                    bpy.ops.image.open(filepath = tex_paths[3])
+                node_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
+                node_det_normal2 = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGBCurve')
+                node_det_normal.name = "Detail Normal Texture"
+                if tex_names[3] in bpy.data.images:
+                    node_det_normal.image = bpy.data.images[tex_names[3]]
+                    node_det_normal.image.colorspace_settings.name='Non-Color'
+                node_det_normal2.mapping.curves[1].points[0].location = (0,1)
+                node_det_normal2.mapping.curves[1].points[1].location = (1,0)
+                temp_mat.node_tree.links.new(node_uv_det.outputs["UV"], node_det_normal.inputs["Vector"])
+                temp_mat.node_tree.links.new(node_det_normal.outputs["Color"], node_det_normal2.inputs["Color"])
+                node_mix_diff_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
+                temp_mat.node_tree.links.new(node_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color1"])
+                temp_mat.node_tree.links.new(node_det_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color2"])
+                temp_mat.node_tree.links.new(node_det_normal.outputs["Alpha"], node_mix_diff_det_normal.inputs["Fac"])
+                temp_mat.node_tree.links.new(node_mix_diff_det_normal.outputs["Color"], node_normal3.inputs["Color"])
+                node_det_normal.location = (-1500, -1100)
+                node_det_normal2.location = (-1200, -1100)
+                node_mix_diff_det_normal.location = (-600, -600)
                 
             # Branch seam detail
             if tex_names[2] and uvs_det and branches_seam_det:
@@ -666,29 +844,6 @@ def read_srt_json(context, filepath):
                 node_uv_seam_det.location = (-2000, 600)
                 node_mix_det.location = (-700, 600)
                 node_mix_det_alpha.location = (-700, 340)
-                
-            # Detail normal
-            if tex_names[3] and uvs_det:
-                if os.path.exists(tex_paths[3]):
-                    bpy.ops.image.open(filepath = tex_paths[3])
-                node_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeTexImage')
-                node_det_normal2 = temp_mat.node_tree.nodes.new(type = 'ShaderNodeRGBCurve')
-                node_det_normal.name = "Detail Normal Texture"
-                if tex_names[3] in bpy.data.images:
-                    node_det_normal.image = bpy.data.images[tex_names[3]]
-                    node_det_normal.image.colorspace_settings.name='Non-Color'
-                node_det_normal2.mapping.curves[1].points[0].location = (0,1)
-                node_det_normal2.mapping.curves[1].points[1].location = (1,0)
-                temp_mat.node_tree.links.new(node_uv_det.outputs["UV"], node_det_normal.inputs["Vector"])
-                temp_mat.node_tree.links.new(node_det_normal.outputs["Color"], node_det_normal2.inputs["Color"])
-                node_mix_diff_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
-                temp_mat.node_tree.links.new(node_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color1"])
-                temp_mat.node_tree.links.new(node_det_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color2"])
-                temp_mat.node_tree.links.new(node_det_normal.outputs["Alpha"], node_mix_diff_det_normal.inputs["Fac"])
-                temp_mat.node_tree.links.new(node_mix_diff_det_normal.outputs["Color"], node_normal3.inputs["Color"])
-                node_det_normal.location = (-1500, -1100)
-                node_det_normal2.location = (-1200, -1100)
-                node_mix_diff_det_normal.location = (-600, -600)
                 
             # Branch seam detain normal
             if tex_names[3] and uvs_det and branches_seam_det:
