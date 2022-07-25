@@ -210,6 +210,13 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                     bpy.ops.object.select_all(action='DESELECT')
                     bpy.context.view_layer.objects.active = mainMesh
                     bpy.context.active_object.select_set(state=True)
+                    # Triangulate faces
+                    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+                    bpy.ops.mesh.select_all(action="SELECT")
+                    bpy.ops.mesh.quads_convert_to_tris(quad_method='SHORTEST_DIAGONAL', ngon_method='BEAUTY')
+                    bpy.ops.mesh.select_all(action="DESELECT")
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                    # Split by materials
                     bpy.ops.mesh.separate(type='MATERIAL')
                     # LOD Mesh
                     if mainMesh.name + "_LOD" in mesh_objects:
@@ -218,6 +225,13 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         bpy.ops.object.select_all(action='DESELECT')
                         bpy.context.view_layer.objects.active = mainMesh_LOD
                         bpy.context.active_object.select_set(state=True)
+                        # Triangulate faces
+                        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+                        bpy.ops.mesh.select_all(action="SELECT")
+                        bpy.ops.mesh.quads_convert_to_tris(quad_method='SHORTEST_DIAGONAL', ngon_method='BEAUTY')
+                        bpy.ops.mesh.select_all(action="DESELECT")
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                        # Split by materials
                         bpy.ops.mesh.separate(type='MATERIAL')
                     meshes = main_coll.collection.children[child_coll.name].objects
                     mesh_names = []
@@ -260,23 +274,41 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 # Verts' position
                                 verts.append(list(vert.co))
                                 # Wind data and Geom Type
+                                # Add values if missing just to make the exporter more robust
+                                if not vert.groups:
+                                    if geom_types:
+                                        mesh.vertex_groups["GeomType"].add([vert.index], ((1 + random.choice(geom_types))/5), 'REPLACE')
+                                    if wind_weight1:
+                                        mesh.vertex_groups["WindWeight1"].add([vert.index], 0, 'REPLACE')
+                                    if wind_weight2:
+                                        mesh.vertex_groups["WindWeight2"].add([vert.index], 0, 'REPLACE')
+                                    if wind_normal1:
+                                        mesh.vertex_groups["WindNormal1"].add([vert.index], 0, 'REPLACE')
+                                    if wind_normal2:
+                                        mesh.vertex_groups["WindNormal2"].add([vert.index], 0, 'REPLACE')
+                                    if wind_extra1:
+                                        mesh.vertex_groups["WindExtra1"].add([vert.index], 0, 'REPLACE')
+                                    if wind_extra2:
+                                        mesh.vertex_groups["WindExtra2"].add([vert.index], 0, 'REPLACE')
+                                    if wind_extra3:
+                                        mesh.vertex_groups["WindExtra3"].add([vert.index], 0, 'REPLACE')
                                 for g in vert.groups:
-                                    if mesh.vertex_groups[g.group].name == "GeomType":
-                                       geom_types.append(int(g.weight*5-1))
+                                    if mesh.vertex_groups[g.group].name == "GeomType":  
+                                        geom_types.append(int(g.weight*5-1))
                                     if mesh.vertex_groups[g.group].name == "WindWeight1":
-                                       wind_weight1.append(g.weight)
+                                        wind_weight1.append(g.weight)
                                     if mesh.vertex_groups[g.group].name == "WindWeight2":
                                         wind_weight2.append(g.weight)
                                     if mesh.vertex_groups[g.group].name == "WindNormal1":
-                                       wind_normal1.append(g.weight*16)
+                                        wind_normal1.append(g.weight*16)
                                     if mesh.vertex_groups[g.group].name == "WindNormal2":
-                                       wind_normal2.append(g.weight*16)
+                                        wind_normal2.append(g.weight*16)
                                     if mesh.vertex_groups[g.group].name == "WindExtra1":
-                                       wind_extra1.append(g.weight*16)
+                                        wind_extra1.append(g.weight*16)
                                     if mesh.vertex_groups[g.group].name == "WindExtra2":
-                                       wind_extra2.append(g.weight)
+                                        wind_extra2.append(g.weight)
                                     if mesh.vertex_groups[g.group].name == "WindExtra3":
-                                       wind_extra3.append(g.weight*2)
+                                        wind_extra3.append(g.weight*2)
                                        
                             # Faces
                             for face in mesh.data.polygons:
@@ -596,61 +628,90 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             if 4 in geom_types:
                                 srtDraw["PRenderState"]["BRigidMeshesPresent"] = True
                             if len(mesh.data.materials) > 0:
-                                mesh_mat = mesh.data.materials[0].node_tree.nodes
-                                if "Diffuse Texture" in mesh_mat:
-                                    if mesh_mat["Diffuse Texture"].image:
-                                        mesh_diffuse = mesh_mat["Diffuse Texture"].image.name
+                                mesh_mat = mesh.data.materials[0]
+                                mesh_mat_nodes = mesh_mat.node_tree.nodes
+                                if "Diffuse Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes["Diffuse Texture"].image:
+                                        mesh_diffuse = mesh_mat_nodes["Diffuse Texture"].image.name
                                         srtDraw["PRenderState"]["ApTextures"][0]["Val"] = mesh_diffuse
                                         textures_names.append(mesh_diffuse)
-                                if "Normal Texture" in mesh_mat:
-                                    if mesh_mat["Normal Texture"].image:
-                                        mesh_normal = mesh_mat["Normal Texture"].image.name
+                                if "Normal Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes["Normal Texture"].image:
+                                        mesh_normal = mesh_mat_nodes["Normal Texture"].image.name
                                         srtDraw["PRenderState"]["ApTextures"][1]["Val"] = mesh_normal
                                         textures_names.append(mesh_normal)
-                                if "Detail Texture" in mesh_mat:
-                                    if mesh_mat["Detail Texture"].image:
-                                        mesh_detail = mesh_mat["Detail Texture"].image.name
+                                if "Detail Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes["Detail Texture"].image:
+                                        mesh_detail = mesh_mat_nodes["Detail Texture"].image.name
                                         srtDraw["PRenderState"]["ApTextures"][2]["Val"] = mesh_detail
-                                        srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
                                         textures_names.append(mesh_detail)
-                                if "Detail Normal Texture" in mesh_mat:
-                                    if mesh_mat["Detail Normal Texture"].image:
-                                        mesh_detail_normal = mesh_mat["Detail Normal Texture"].image.name
+                                if "Detail Normal Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes["Detail Normal Texture"].image:
+                                        mesh_detail_normal = mesh_mat_nodes["Detail Normal Texture"].image.name
                                         srtDraw["PRenderState"]["ApTextures"][3]["Val"] = mesh_detail_normal
-                                        srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
                                         textures_names.append(mesh_detail_normal)
-                                if "Specular Texture" in mesh_mat:
-                                    if mesh_mat["Specular Texture"].image:
-                                        mesh_specular = mesh_mat["Specular Texture"].image.name
+                                if "Specular Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes["Specular Texture"].image:
+                                        mesh_specular = mesh_mat_nodes["Specular Texture"].image.name
                                         srtDraw["PRenderState"]["ApTextures"][4]["Val"] = mesh_specular
-                                        srtDraw["PRenderState"]["ESpecular"] = "EFFECT_ON"
                                         textures_names.append(mesh_specular)
-                                        if mesh_mat["Principled BSDF"].inputs[15].links:
-                                            transmission_node = mesh_mat["Principled BSDF"].inputs[15].links[0].from_node
-                                            if transmission_node == mesh_mat["Specular Texture"]:
-                                                mesh_transmission = transmission_node.image.name
-                                                srtDraw["PRenderState"]["ApTextures"][5]["Val"] = mesh_transmission
-                                                srtDraw["PRenderState"]["ETransmission"] = "EFFECT_ON"
-                                                textures_names.append(mesh_transmission)
-                                            elif re.search("Mix", transmission_node.name):
-                                                if transmission_node.inputs[1].links:
-                                                    transmission_node2 = transmission_node.inputs[2].links[0].from_node
-                                                    if transmission_node2 == mesh_mat["Specular Texture"]:
-                                                        mesh_transmission = transmission_node2.image.name 
-                                                        srtDraw["PRenderState"]["ApTextures"][5]["Val"] = mesh_transmission
-                                                        srtDraw["PRenderState"]["ETransmission"] = "EFFECT_ON"
-                                                        textures_names.append(mesh_transmission)
-                            if ambients:
-                                srtDraw["PRenderState"]["BAmbientOcclusion"] = True
-                                #srtDraw["PRenderState"]["EAmbientContrast"] = "EFFECT_OFF_X_ON"
-                            if seam_blending:
-                                srtDraw["PRenderState"]["EBranchSeamSmoothing"] = "EFFECT_OFF_X_ON"
+                                        mesh_transmission = mesh_mat_nodes["Specular Texture"].image.name 
+                                        srtDraw["PRenderState"]["ApTextures"][5]["Val"] = mesh_transmission
+                                        textures_names.append(mesh_transmission)
+                                        
+                                srtDraw["PRenderState"]["VAmbientColor"]["x"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[0]
+                                srtDraw["PRenderState"]["VAmbientColor"]["y"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[1]
+                                srtDraw["PRenderState"]["VAmbientColor"]["z"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[2]
+                                srtDraw["PRenderState"]["FAmbientContrastFactor"] = mesh_mat_nodes['Ambient Contrast Factor'].outputs['Value'].default_value
+                                srtDraw["PRenderState"]["VDiffuseColor"]["x"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[0]
+                                srtDraw["PRenderState"]["VDiffuseColor"]["y"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[1]
+                                srtDraw["PRenderState"]["VDiffuseColor"]["z"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[2]
+                                srtDraw["PRenderState"]["FDiffuseScalar"] = mesh_mat_nodes['Diffuse Scalar'].outputs['Value'].default_value
+                                srtDraw["PRenderState"]["FShininess"] = mesh_mat_nodes['Shininess'].outputs['Value'].default_value
+                                srtDraw["PRenderState"]["VSpecularColor"]["x"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[0]
+                                srtDraw["PRenderState"]["VSpecularColor"]["y"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[1]
+                                srtDraw["PRenderState"]["VSpecularColor"]["z"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[2]
+                                srtDraw["PRenderState"]["VTransmissionColor"]["x"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[0]
+                                srtDraw["PRenderState"]["VTransmissionColor"]["y"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[1]
+                                srtDraw["PRenderState"]["VTransmissionColor"]["z"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[2]
+                                srtDraw["PRenderState"]["FTransmissionShadowBrightness"] = mesh_mat_nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
+                                srtDraw["PRenderState"]["FTransmissionViewDependency"] = mesh_mat_nodes['Transmission View Dependency'].outputs['Value'].default_value
+                                if "Branch Seam Diffuse Texture" in mesh_mat_nodes:
+                                    srtDraw["PRenderState"]["FBranchSeamWeight"] = mesh_mat_nodes['Branch Seam Weight'].outputs['Value'].default_value
+                                srtDraw["PRenderState"]["FAlphaScalar"] = mesh_mat_nodes['Alpha Scalar'].outputs['Value'].default_value
+                                
+                                if mesh_mat.use_backface_culling == True:
+                                    srtDraw["PRenderState"]["EFaceCulling"] = "CULLTYPE_BACK"
+                                if mesh_mat.blend_method == 'OPAQUE':
+                                    srtDraw["PRenderState"]["BDiffuseAlphaMaskIsOpaque"] = True
+                                if mesh_mat.shadow_method == 'NONE':
+                                    srtDraw["PRenderState"]["BCastsShadows"] = False
+                                if mesh_mat_nodes['Specular'].inputs["Ambient Occlusion"].links:
+                                    if mesh_mat_nodes['Specular'].inputs["Ambient Occlusion"].links[0].from_node == mesh_mat_nodes["Ambient Occlusion"]:
+                                        srtDraw["PRenderState"]["BAmbientOcclusion"] = True
+                                if mesh_mat_nodes['Ambient Contrast'].inputs['Fac'].links:
+                                    if mesh_mat_nodes['Ambient Contrast'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Ambient Contrast Factor']:
+                                        srtDraw["PRenderState"]["EAmbientContrast"] = "EFFECT_ON"
+                                if "Detail Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links:
+                                        if mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links[0].from_node == mesh_mat_nodes["Detail Texture"] and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links[0].from_node == mesh_mat_nodes["Detail Normal Texture"]:
+                                            srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
+                                        elif mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Mix Detail Seam'] and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Mix Detail Normal Seam']:
+                                            srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
+                                if mesh_mat_nodes["Mix Specular Color"].inputs['Color2'].links and mesh_mat_nodes['Specular'].inputs['Roughness'].links:
+                                    if mesh_mat_nodes["Mix Specular Color"].inputs['Color2'].links[0].from_node == mesh_mat_nodes["Specular Color"] and mesh_mat_nodes['Specular'].inputs['Roughness'].links[0].from_node == mesh_mat_nodes['Invert Shininess']:
+                                        srtDraw["PRenderState"]["ESpecular"] = "EFFECT_ON"
+                                if mesh_mat_nodes["Mix Transmission Alpha"].inputs["Color2"].links and mesh_mat_nodes["Mix Shader Fresnel"].inputs["Fac"].links and mesh_mat_nodes["Mix Shadow Brightness"].inputs["Fac"].links:
+                                    if mesh_mat_nodes["Mix Transmission Alpha"].inputs["Color2"].links[0].from_node == mesh_mat_nodes["Mix Transmission Color"] and mesh_mat_nodes["Mix Shader Fresnel"].inputs["Fac"].links[0].from_node == mesh_mat_nodes['Transmission Fresnel'] and mesh_mat_nodes["Mix Shadow Brightness"].inputs["Fac"].links[0].from_node == mesh_mat_nodes['Transmission Shadow Brightness']:
+                                        srtDraw["PRenderState"]["ETransmission"] = "EFFECT_ON"
+                                if "Branch Seam Diffuse Texture" in mesh_mat_nodes:
+                                    if mesh_mat_nodes['Branch Seam Weight Mult'].outputs['Value'].links:
+                                        srtDraw["PRenderState"]["EBranchSeamSmoothing"] = "EFFECT_ON"
+                                
                             if child_coll == main_coll.collection.children[-1]:
                                 srtDraw["PRenderState"]["BFadeToBillboard"] = True
                             if grass == True:
                                 srtDraw["PRenderState"]["BUsedAsGrass"] = True
-                            if geom_types[0] == 0:
-                                srtDraw["PRenderState"]["EFaceCulling"] = "CULLTYPE_BACK"
                                 
                             # Properties
                             prop_index = 0

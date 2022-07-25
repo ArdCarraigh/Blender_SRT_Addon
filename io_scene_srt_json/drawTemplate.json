@@ -40,7 +40,7 @@
 		"y": 0.588235319,
 		"z": 0.588235319
 	  },
-	  "EAmbientContrast": "EFFECT_ON",
+	  "EAmbientContrast": "EFFECT_OFF",
 	  "FAmbientContrastFactor": 0.519999981,
 	  "BAmbientOcclusion": false,
 	  "VDiffuseColor": {
