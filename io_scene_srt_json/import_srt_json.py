@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# import_srt_json.py
+
 import bpy
 import math
 import json
@@ -1028,7 +1031,7 @@ def read_srt_json(context, filepath):
                 temp_mat.node_tree.links.new(node_uv_det.outputs["UV"], node_det_normal.inputs["Vector"])
                 temp_mat.node_tree.links.new(node_det_normal.outputs["Color"], node_det_normal2.inputs["Color"])
                 node_mix_diff_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
-                node_mix_diff_det.name = 'Mix Detail Normal'
+                node_mix_diff_det_normal.name = 'Mix Detail Normal'
                 node_mix_diff_det_normal.inputs['Fac'].default_value = 0
                 temp_mat.node_tree.links.new(node_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color1"])
                 temp_mat.node_tree.links.new(node_det_normal2.outputs["Color"], node_mix_diff_det_normal.inputs["Color2"])
@@ -1094,7 +1097,7 @@ def read_srt_json(context, filepath):
                 node_mix_det_normal = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
                 node_mix_det_normal.inputs['Fac'].default_value = 1
                 node_mix_det_normal_alpha = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixRGB')
-                node_mix_det_alpha.name = 'Mix Detail Normal Seam'
+                node_mix_det_normal_alpha.name = 'Mix Detail Normal Seam'
                 node_mix_det_normal_alpha.inputs['Fac'].default_value = 1
                 temp_mat.node_tree.links.new(node_det_normal2.outputs["Color"], node_mix_det_normal.inputs["Color2"])
                 temp_mat.node_tree.links.new(node_seam_det_normal2.outputs["Color"], node_mix_det_normal.inputs["Color1"])

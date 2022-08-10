@@ -8,8 +8,8 @@ bl_info = {
     "blender": (2, 92, 0),
     "location": "File > Import-Export",
     "description": "Import and export srt .json dump meshes",
-    "wiki_url": "",
-    "tracker_url": "",
+    "wiki_url": "https://github.com/ArdCarraigh/Blender_SRT_JSON_Addon",
+    "tracker_url": "https://github.com/ArdCarraigh/Blender_SRT_JSON_Addon/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
 }
@@ -23,6 +23,10 @@ from io_scene_srt_json import import_srt_json
 from io_scene_srt_json.import_srt_json import read_srt_json
 from io_scene_srt_json import export_srt_json
 from io_scene_srt_json.export_srt_json import write_srt_json
+from io_scene_srt_json.tools import add_srt_sphere
+from io_scene_srt_json.tools.add_srt_sphere import add_srt_sphere
+from io_scene_srt_json.tools import add_srt_connection
+from io_scene_srt_json.tools.add_srt_connection import add_srt_connection
 
 class ImportSrtJson(Operator, ImportHelper):
     """Load a SRT JSON dump file"""
@@ -182,6 +186,55 @@ class ExportSrtJson(Operator, ExportHelper):
         self.lodDist_StartBillboard, self.lodDist_EndBillboard, self.grass)
         
         return {'FINISHED'}
+    
+class AddSRTCollisionSphere(Operator, AddObjectHelper):
+    """Create a new Collision Sphere"""
+    bl_idname = "speed_tree.add_srt_collision_sphere"
+    bl_label = "Add Collision Sphere"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    radius: FloatProperty(
+        name="Radius",
+        default = 0.15,
+        description="Set the radius of the sphere",
+    )
+    location: FloatVectorProperty(
+        name="Location",
+        default=(0.0, 0.0, 0.0),
+        description="Set the location of the sphere",
+    )
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        add_srt_sphere(context, self.radius, self.location)
+        return {'FINISHED'}
+    
+class AddSRTSphereConnection(Operator):
+    """Create a new Connection"""
+    bl_idname = "speed_tree.add_srt_sphere_connection"
+    bl_label = "Add Sphere Connection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        add_srt_connection(context)
+        return {'FINISHED'}
+    
+class SpeedTreeMenu(bpy.types.Menu):
+    bl_label = "SpeedTree"
+    bl_idname = "VIEW3D_MT_object_SpeedTree_menu"
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator(AddSRTCollisionSphere.bl_idname, text = "Add Collision Sphere", icon='MESH_UVSPHERE')
+        layout.operator(AddSRTSphereConnection.bl_idname, text = "Add Sphere Connection", icon='MESH_CAPSULE')
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
@@ -189,18 +242,35 @@ def menu_func_import(self, context):
     
 def menu_func_export(self, context):
     self.layout.operator(ExportSrtJson.bl_idname, text="SRT JSON (.json)")
+    
+def draw_item(self, context):
+    layout = self.layout
+    layout.separator()
+    layout.menu(SpeedTreeMenu.bl_idname)
 
 def register():
     bpy.utils.register_class(ImportSrtJson)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.utils.register_class(ExportSrtJson)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    
+    bpy.utils.register_class(AddSRTCollisionSphere)
+    bpy.utils.register_class(AddSRTSphereConnection)
+    
+    bpy.utils.register_class(SpeedTreeMenu)
+    bpy.types.VIEW3D_MT_object.append(draw_item)
 
 def unregister():
     bpy.utils.unregister_class(ImportSrtJson)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.utils.unregister_class(exportSrtJson)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    
+    bpy.utils.unregister_class(AddSRTCollisionSphere)
+    bpy.utils.unregister_class(AddSRTSphereConnection)
+    
+    bpy.utils.unregister_class(SpeedTreeMenu)
+    bpy.types.VIEW3D_MT_object.remove(draw_item)
 
 if __name__ == "__main__":
     register()

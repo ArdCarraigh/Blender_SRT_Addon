@@ -59,7 +59,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
     if re.search("SRT Asset", main_coll.name):
         # Open main template
         os.chdir(os.path.dirname(__file__))
-        with open("mainTemplate.json", 'r', encoding='utf-8') as mainfile:
+        with open("templates/mainTemplate.json", 'r', encoding='utf-8') as mainfile:
             srtMain = json.load(mainfile)
             
         # Get and Write Collisions
@@ -71,7 +71,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                     bpy.ops.object.select_all(action='DESELECT')
                     bpy.context.view_layer.objects.active = collisionObject
                     bpy.context.active_object.select_set(state=True)
-                    with open("collisionTemplate.json", 'r', encoding='utf-8') as collisionfile:
+                    with open("templates/collisionTemplate.json", 'r', encoding='utf-8') as collisionfile:
                         srtCollision = json.load(collisionfile)
                     if len(collisionObject.data.materials) <= 1:
                         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME', center='MEDIAN')
@@ -198,7 +198,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
             if re.search("LOD", child_coll.name):
                 mesh_objects = main_coll.collection.children[child_coll.name].objects
                 if len(mesh_objects):
-                    with open("lodTemplate.json", 'r', encoding='utf-8') as lodfile:
+                    with open("templates/lodTemplate.json", 'r', encoding='utf-8') as lodfile:
                         srtLod = json.load(lodfile)
                     # Get lodsNum
                     lodsNum += 1
@@ -242,7 +242,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             mesh_lod_names.append(mesh.name)
                     for mesh in meshes:
                         if mainMesh.name in mesh.name and not mesh.name.endswith("_LOD"):
-                            with open("drawTemplate.json", 'r', encoding='utf-8') as drawfile:
+                            with open("templates/drawTemplate.json", 'r', encoding='utf-8') as drawfile:
                                 srtDraw = json.load(drawfile)
                             if "DiffuseUV" in mesh.data.uv_layers:
                                 mesh.data.uv_layers.active = mesh.data.uv_layers["DiffuseUV"]
@@ -360,7 +360,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             attrib_name5 = "VERTEX_ATTRIB_UNASSIGNED"
                             attrib_name6 = "VERTEX_ATTRIB_UNASSIGNED"
                             for i in range(len(verts)):
-                                with open("vertTemplate.json", 'r', encoding='utf-8') as vertfile:
+                                with open("templates/vertTemplate.json", 'r', encoding='utf-8') as vertfile:
                                     srtVert = json.load(vertfile)
                                 offset = 0
                                 # Vert position
@@ -892,7 +892,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             srtMain["Geometry"]["P3dRenderStateMain"].append(srtDraw["PRenderState"])
                             
                             # Write P3dRenderStateDepth
-                            with open("depthTemplate.json", 'r', encoding='utf-8') as depthfile:
+                            with open("templates/depthTemplate.json", 'r', encoding='utf-8') as depthfile:
                                 srtDepth = json.load(depthfile)
                             srtMain["Geometry"]["P3dRenderStateDepth"].append(srtDepth)
                             
