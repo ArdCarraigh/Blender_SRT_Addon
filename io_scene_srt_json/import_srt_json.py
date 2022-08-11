@@ -771,14 +771,23 @@ def read_srt_json(context, filepath):
             node_shader_mix_shadow = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMixShader')
             node_shader_mix_shadow.location = (3000, 300)
             
-            node_clamp_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeClamp')
-            node_clamp_alpha_scalar.location = (200, 200)
-            node_brightness_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeBrightContrast')
-            node_brightness_alpha_scalar.location = (0, 200)
+            node_map_range_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMapRange')
+            node_map_range_alpha_scalar.inputs['From Max'].default_value = 3
+            node_map_range_alpha_scalar.inputs['To Min'].default_value = 0.38
+            node_map_range_alpha_scalar.inputs['To Max'].default_value = 3.5
+            node_map_range_alpha_scalar.location = (-200, 200)
+            node_add_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMath')
+            node_add_alpha_scalar.use_clamp = True
+            node_add_alpha_scalar.inputs[1].default_value = 0.25
+            node_add_alpha_scalar.location = (0, 200)
+            node_mult_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMath')
+            node_mult_alpha_scalar.use_clamp = True
+            node_mult_alpha_scalar.operation = 'MULTIPLY'
+            node_mult_alpha_scalar.location = (200, 200)
             node_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeValue')
             node_alpha_scalar.name = 'Alpha Scalar'
             node_alpha_scalar.outputs['Value'].default_value = alphaScalar
-            node_alpha_scalar.location = (-200, 200)
+            node_alpha_scalar.location = (-400, 200)
             node_frame_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'NodeFrame')
             node_alpha_scalar.parent = node_frame_alpha_scalar
             node_frame_alpha_scalar.use_custom_color = True
@@ -857,10 +866,11 @@ def read_srt_json(context, filepath):
                 temp_mat.node_tree.links.new(node_transmission_fresnel.outputs["Fac"], node_shader_mix_transmission_fresnel.inputs["Fac"])
                 temp_mat.node_tree.links.new(node_shadow_brightness_value.outputs["Value"], node_shadow_brightness.inputs["Fac"])
                     
-            temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_brightness_alpha_scalar.inputs["Color"])
-            temp_mat.node_tree.links.new(node_brightness_alpha_scalar.outputs["Color"], node_clamp_alpha_scalar.inputs["Value"])
-            temp_mat.node_tree.links.new(node_clamp_alpha_scalar.outputs["Result"], node_invert_diffuse_alpha.inputs["Color"])
-            temp_mat.node_tree.links.new(node_alpha_scalar.outputs["Value"], node_brightness_alpha_scalar.inputs["Bright"])
+            temp_mat.node_tree.links.new(node_diff.outputs["Alpha"], node_add_alpha_scalar.inputs[0])
+            temp_mat.node_tree.links.new(node_add_alpha_scalar.outputs["Value"], node_mult_alpha_scalar.inputs[0])
+            temp_mat.node_tree.links.new(node_mult_alpha_scalar.outputs["Value"], node_invert_diffuse_alpha.inputs["Color"])
+            temp_mat.node_tree.links.new(node_alpha_scalar.outputs["Value"], node_map_range_alpha_scalar.inputs["Value"])
+            temp_mat.node_tree.links.new(node_map_range_alpha_scalar.outputs["Result"], node_mult_alpha_scalar.inputs[1])
             temp_mat.node_tree.links.new(node_invert_diffuse_alpha.outputs["Color"], node_shadow_brightness.inputs["Color1"])
             temp_mat.node_tree.links.new(node_shadow_brightness.outputs["Color"], node_shadow_shader.inputs["Color"])
             
@@ -914,7 +924,7 @@ def read_srt_json(context, filepath):
                     temp_mat.node_tree.links.new(node_seam_blending_weight.outputs["Value"], node_mix_diff.inputs["Fac"])
                     temp_mat.node_tree.links.new(node_seam_blending_weight.outputs["Value"], node_mix_diff_alpha.inputs["Fac"])
                 temp_mat.node_tree.links.new(node_mix_diff.outputs["Color"], node_mix_diffuseScalar.inputs["Color1"])
-                temp_mat.node_tree.links.new(node_mix_diff_alpha.outputs["Color"], node_brightness_alpha_scalar.inputs["Color"])
+                temp_mat.node_tree.links.new(node_mix_diff_alpha.outputs["Color"], node_add_alpha_scalar.inputs[0])
                 node_seam_diff.location = (-1000, 1400)
                 node_uv_seam_diff.location = (-2000, 1400)
                 node_seam_blending.location = (-2200, 0)
