@@ -71,6 +71,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                     bpy.ops.object.select_all(action='DESELECT')
                     bpy.context.view_layer.objects.active = collisionObject
                     bpy.context.active_object.select_set(state=True)
+                    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
                     with open("templates/collisionTemplate.json", 'r', encoding='utf-8') as collisionfile:
                         srtCollision = json.load(collisionfile)
                     if len(collisionObject.data.materials) <= 1:

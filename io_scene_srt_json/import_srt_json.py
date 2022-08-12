@@ -29,36 +29,6 @@ def GetVertValues(prop):
             for i in range(size):
                 prop_values.append(float(values[i]))
     return(prop_values)
-
-def make_cylinder(pos_1, R1, pos_2, R2):
-    pos_1 = np.array(pos_1)
-    pos_2 = np.array(pos_2)
-    AB = np.linalg.norm(pos_2-pos_1)
-    BE = abs(R2-R1)
-    AE = (AB**2 - (R2-R1)**2)**.5
-    cone_radius_1 = R1 * AE / AB
-    cone_radius_2 = R2 * AE / AB
-    AG = R1 * BE / AB
-    BF = R2 * BE / AB
-    
-    AB_dir = (pos_2-pos_1)/AB
-    if R1 > R2:
-        cone_pos = pos_1 + AB_dir * AG
-    else:
-        cone_pos = pos_1 - AB_dir * AG
-    
-    cone_depth = AB - abs(AG-BF)
-    cone_pos = cone_pos + AB_dir * cone_depth * .5 #cone pos is midpoint of centerline
-    rotation = Vector([0,0,1]).rotation_difference(Vector(AB_dir)).to_euler("XYZ") ### may need to change
-    
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=24, 
-        radius1=cone_radius_1, 
-        radius2=cone_radius_2, 
-        depth=cone_depth, 
-        location=cone_pos, 
-        rotation=rotation, 
-        )
         
 def JoinThem(mesh_names):
     bpy.context.view_layer.objects.active = None
@@ -95,38 +65,26 @@ def read_srt_json(context, filepath):
             radius = float(collisionObject["m_fRadius"])
             spheres.append(spheres_pos)
             radii.append(radius)
-            
-        # Add collision collection
-        col_coll = bpy.data.collections.new("Collision Objects")
-        col_coll_name = col_coll.name
-        main_coll.children.link(col_coll)
-        bpy.context.view_layer.active_layer_collection = parent_coll.children[main_coll_name].children[col_coll_name]
     
-        # Impot collision objects
+        # Import collision objects
         for i in range(len(spheres)):
-            #Sphere1
-            bpy.ops.mesh.primitive_uv_sphere_add(radius = radii[i], location = spheres[i][0], segments=24, ring_count=16)
-            sphere1_name = bpy.context.active_object.name
-            bpy.context.active_object.display_type = 'WIRE'
-            bpy.context.active_object.data.materials.append(sphere1_mat)
+            #Sphere
+            if spheres[i][0] == spheres[i][1]:
+                bpy.ops.speed_tree.add_srt_collision_sphere(radius = radii[i], location = spheres[i][0])
             
-            #Sphere2
-            bpy.ops.mesh.primitive_uv_sphere_add(radius = radii[i], location = spheres[i][1], segments=24, ring_count=16)
-            sphere2_name = bpy.context.active_object.name
-            bpy.context.active_object.display_type = 'WIRE'
-            bpy.context.active_object.data.materials.append(sphere2_mat)
-            
-            #Cylinder in between
-            make_cylinder(spheres[i][0], radii[i], spheres[i][1], radii[i])
-            cylinder_name = bpy.context.active_object.name
-            bpy.context.active_object.display_type = 'WIRE'
-            bpy.context.active_object.data.materials.append(cylinder_mat)
-            
-            #Join them all
-            col_names = [sphere1_name, sphere2_name,cylinder_name]
-            JoinThem(col_names)
-            bpy.context.active_object.name = "Mesh_col"+str(i)
-            
+            #Capsule
+            else:
+                sphere_to_connect = []
+                bpy.ops.speed_tree.add_srt_collision_sphere(radius = radii[i], location = spheres[i][0])
+                sphere_to_connect.append(bpy.context.active_object)
+                bpy.ops.speed_tree.add_srt_collision_sphere(radius = radii[i], location = spheres[i][1])
+                sphere_to_connect.append(bpy.context.active_object)
+                bpy.context.view_layer.objects.active = None
+                bpy.ops.object.select_all(action='DESELECT')
+                for sphere in sphere_to_connect:
+                    bpy.context.view_layer.objects.active = sphere
+                    bpy.context.active_object.select_set(state=True)
+                bpy.ops.speed_tree.add_srt_sphere_connection()
             
     # Billboards #
     if "VerticalBillboards" in srt:
