@@ -41,6 +41,9 @@ def JoinThem(mesh_names):
 def read_srt_json(context, filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
         srt = json.load(file)
+        
+    if bpy.data.window_managers['WinMan'].previewLod:
+        bpy.data.window_managers['WinMan'].previewLod = False
     
     # Create Main Collection #
     parent_coll = bpy.context.view_layer.active_layer_collection
@@ -248,8 +251,11 @@ def read_srt_json(context, filepath):
             uvs_diff = []
             uvs_det = []
             geom_types = []
+            leaf_card_corners = []
+            leaf_card_lod_scalars = []
             branches_wind = []
             wind_extras = []
+            wind_flags = []
             branches_seam_diff = []
             branches_seam_det = []
             tangents = []
@@ -294,6 +300,7 @@ def read_srt_json(context, filepath):
             ambientOcclusion_bool = mesh_call["PRenderState"]["BAmbientOcclusion"]
             castShadows_bool = mesh_call["PRenderState"]["BCastsShadows"]
             alphaMaskOpaque_bool = mesh_call["PRenderState"]["BDiffuseAlphaMaskIsOpaque"]
+            leafCard_bool = mesh_call["PRenderState"]["BFacingLeavesPresent"]
 
             # For each vertex
             for k in range(nverts):
@@ -330,10 +337,20 @@ def read_srt_json(context, filepath):
                         if prop["ValueCount"] > 0:
                             uvs_det.append(GetVertValues(prop))
 
-                    # Geom Type?
+                    # Geom Type
                     if prop["PropertyName"] == "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT":
                         if prop["ValueCount"] > 0:
                             geom_types.append(GetVertValues(prop))
+                            
+                    # Leaf Card Corner
+                    if prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_CORNER":
+                        if prop["ValueCount"] > 0:
+                            leaf_card_corners.append(GetVertValues(prop))
+                            
+                    # Leaf Card LOD Scalar
+                    if prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR":
+                        if prop["ValueCount"] > 0:
+                            leaf_card_lod_scalars.append(GetVertValues(prop))
 
                     # Wind branch data
                     if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_BRANCH_DATA":
@@ -344,6 +361,11 @@ def read_srt_json(context, filepath):
                     if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_EXTRA_DATA":
                         if prop["ValueCount"] > 0:
                             wind_extras.append(GetVertValues(prop))
+                            
+                    # Wind Flag
+                    if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_FLAGS":
+                        if prop["ValueCount"] > 0:
+                            wind_flags.append(GetVertValues(prop))
 
                     # Branch seam diffuse
                     if prop["PropertyName"] == "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE":
@@ -437,6 +459,9 @@ def read_srt_json(context, filepath):
             mesh2 = bpy.data.objects[bpy.context.active_object.name]
             
             #Geometry type
+            if not geom_types and leafCard_bool:
+                for vert in verts:
+                    geom_types.append([3])
             if geom_types:
                 mesh2.vertex_groups.new(name="GeomType")
                 for k in range(len(mesh2.data.vertices)):
@@ -463,7 +488,42 @@ def read_srt_json(context, filepath):
                     mesh2.vertex_groups["WindExtra1"].add([mesh2.data.vertices[k].index], wind_extras[k][0]/16, 'REPLACE')
                     mesh2.vertex_groups["WindExtra2"].add([mesh2.data.vertices[k].index], wind_extras[k][1], 'REPLACE')
                     mesh2.vertex_groups["WindExtra3"].add([mesh2.data.vertices[k].index], wind_extras[k][2]/2, 'REPLACE')
+                    
+            #Wind Flag
+            if wind_flags:
+                mesh2.vertex_groups.new(name="WindFlag")
+                for k in range(len(mesh2.data.vertices)):
+                    mesh2.vertex_groups["WindFlag"].add([mesh2.data.vertices[k].index], wind_flags[k][0], 'REPLACE')
+                    
+            # Leaf Card Corner
+            if leaf_card_corners:
+                for coords in leaf_card_corners:
+                    leaf_card_coord_y = coords[1]
+                    coords.pop(1)
+                    coords.append(leaf_card_coord_y)
+                leaf_card_corners = np.array(leaf_card_corners).flatten()
+                mesh2.data.attributes.new(name='leafCardCorner', type='FLOAT_VECTOR', domain='POINT')
+                mesh2.data.attributes['leafCardCorner'].data.foreach_set('vector', leaf_card_corners)
+                
+            # Leaf Card LOD Scalar
+            if leaf_card_lod_scalars:
+                leaf_card_lod_scalars = np.array(leaf_card_lod_scalars).flatten()
+                mesh2.data.attributes.new(name='leafCardLodScalar', type='FLOAT', domain='POINT')
+                mesh2.data.attributes['leafCardLodScalar'].data.foreach_set('value', leaf_card_lod_scalars)
+                
+            # Add verts position and lod position as attributes   
+            if verts:
+                verts2 = np.array(verts).flatten()
+                mesh2.data.attributes.new(name='vertexPosition', type='FLOAT_VECTOR', domain='POINT')
+                mesh2.data.attributes['vertexPosition'].data.foreach_set('vector', verts2)
+            if not verts_lod:
+                verts_lod = verts
+            if verts_lod:
+                verts_lod2 = np.array(verts_lod).flatten()
+                mesh2.data.attributes.new(name='vertexLodPosition', type='FLOAT_VECTOR', domain='POINT')
+                mesh2.data.attributes['vertexLodPosition'].data.foreach_set('vector', verts_lod2)
 
+            # Material creation #
             
             # Materials attribution
             temp_mat = bpy.data.materials.new("Material"+str(j)+"_lod"+str(i))
@@ -488,8 +548,6 @@ def read_srt_json(context, filepath):
             node_main.inputs['Roughness'].default_value = 1
             node_main.location = (700, 300)
             temp_mat.node_tree.nodes["Material Output"].location = (3200, 300)
-            
-            # Apply textures #
                 
             # Diffuse
             if tex_names[0] and uvs_diff:
@@ -732,11 +790,11 @@ def read_srt_json(context, filepath):
             node_map_range_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMapRange')
             node_map_range_alpha_scalar.inputs['From Max'].default_value = 3
             node_map_range_alpha_scalar.inputs['To Min'].default_value = 0.38
-            node_map_range_alpha_scalar.inputs['To Max'].default_value = 3.5
+            node_map_range_alpha_scalar.inputs['To Max'].default_value = 8
             node_map_range_alpha_scalar.location = (-200, 200)
             node_add_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMath')
             node_add_alpha_scalar.use_clamp = True
-            node_add_alpha_scalar.inputs[1].default_value = 0.25
+            node_add_alpha_scalar.inputs[1].default_value = 0.1
             node_add_alpha_scalar.location = (0, 200)
             node_mult_alpha_scalar = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMath')
             node_mult_alpha_scalar.use_clamp = True
@@ -1097,27 +1155,32 @@ def read_srt_json(context, filepath):
             temp_mat.node_tree.links.new(node_ambient_occlusion_vertex_color.outputs["Color"], node_ambient_occlusion.inputs["Color"])
             if ambientOcclusion_bool == True:
                 temp_mat.node_tree.links.new(node_ambient_occlusion.outputs["Color"], node_main.inputs["Ambient Occlusion"])
-                
-            # Add the lod mesh to the scene
-            if verts_lod:
-                mesh = bpy.data.meshes.new(name=mesh_names[-1]+"_LOD")
-                mesh.from_pydata(verts_lod, [], faces)
-                for k in mesh.polygons:
-                    k.use_smooth = True
-                object_data_add(context, mesh)
-                mesh_lod_names.append(bpy.context.active_object.name)
-                
-            # Apply proper material to lod mesh
-            mesh.materials.append(temp_mat)
             
         # Join submeshes under the same LOD
         finalMeshes_names = []
         JoinThem(mesh_names)
         finalMeshes_names.append(bpy.context.active_object.name)
         
-        # Join lod submeshes under the same LOD
-        finalMeshes_lod_names = []
-        JoinThem(mesh_lod_names)
-        finalMeshes_lod_names.append(bpy.context.active_object.name)
+        # Geometry nodes for Facing Leaves
+        bpy.context.active_object.modifiers.new(type='NODES', name = "Leaf Card")
+        geom_nodes = bpy.context.active_object.modifiers[0]
+        start_geom = geom_nodes.node_group.nodes['Group Input']
+        end_geom = geom_nodes.node_group.nodes['Group Output']
+        leaf_card_transform = geom_nodes.node_group.nodes.new(type = "GeometryNodePointTranslate")
+        leaf_card_transform.name = 'Leaf Card Corner'
+        leaf_card_transform.inputs['Translation'].default_value = "leafCardCorner"
+        leaf_card_transform.location = (50, 0)
+        leaf_card_lod_scalar = geom_nodes.node_group.nodes.new(type = "GeometryNodeAttributeVectorMath")
+        leaf_card_lod_scalar.name = 'Leaf Card LOD Scalar'
+        leaf_card_lod_scalar.operation = 'MULTIPLY'
+        leaf_card_lod_scalar.input_type_b = 'VECTOR'
+        leaf_card_lod_scalar.inputs['A'].default_value = "leafCardCorner"
+        leaf_card_lod_scalar.inputs['B'].default_value = 'leafCardLodScalar'
+        leaf_card_lod_scalar.inputs[4].default_value = (1,1,1)
+        leaf_card_lod_scalar.inputs['Result'].default_value = "leafCardCorner"
+        leaf_card_lod_scalar.location = (-150, 0)
+        geom_nodes.node_group.links.new(start_geom.outputs['Geometry'], leaf_card_lod_scalar.inputs["Geometry"])
+        geom_nodes.node_group.links.new(leaf_card_lod_scalar.outputs['Geometry'], leaf_card_transform.inputs["Geometry"])
+        geom_nodes.node_group.links.new(leaf_card_transform.outputs['Geometry'], end_geom.inputs["Geometry"])
         
     bpy.context.view_layer.active_layer_collection = parent_coll.children[main_coll_name]
