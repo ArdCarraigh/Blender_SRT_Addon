@@ -29,6 +29,14 @@ from io_scene_srt_json.tools import add_srt_sphere
 from io_scene_srt_json.tools.add_srt_sphere import add_srt_sphere
 from io_scene_srt_json.tools import add_srt_connection
 from io_scene_srt_json.tools.add_srt_connection import add_srt_connection
+from io_scene_srt_json.tools import make_it_branch
+from io_scene_srt_json.tools.make_it_branch import make_it_branch
+from io_scene_srt_json.tools import make_it_frond
+from io_scene_srt_json.tools.make_it_frond import make_it_frond
+from io_scene_srt_json.tools import make_it_facing_leave
+from io_scene_srt_json.tools.make_it_facing_leave import make_it_facing_leave
+from io_scene_srt_json.tools import generate_srt_billboards
+from io_scene_srt_json.tools.generate_srt_billboards import generate_srt_billboards
 
 class ImportSrtJson(Operator, ImportHelper):
     """Load a SRT JSON dump file"""
@@ -229,15 +237,88 @@ class AddSRTSphereConnection(Operator):
         add_srt_connection(context)
         return {'FINISHED'}
     
+class MakeItBranch(Operator):
+    """Make your Mesh a Branch Geometry"""
+    bl_idname = "speed_tree.make_it_branch"
+    bl_label = "Make it Branch"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        make_it_branch(context)
+        return {'FINISHED'}
+    
+class MakeItFrond(Operator):
+    """Make your Mesh a Frond Geometry"""
+    bl_idname = "speed_tree.make_it_frond"
+    bl_label = "Make it Frond"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        make_it_frond(context)
+        return {'FINISHED'}
+    
+class MakeItFacingLeave(Operator):
+    """Make your Mesh a Facing Leave Geometry"""
+    bl_idname = "speed_tree.make_it_facing_leave"
+    bl_label = "Make it Facing Leave"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        make_it_facing_leave(context)
+        return {'FINISHED'}
+    
+class GenerateSRTBillboards(Operator, AddObjectHelper):
+    """Generate Billboards"""
+    bl_idname = "speed_tree.generate_srt_billboards"
+    bl_label = "Generate Billboards"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    number_billboards: IntProperty(
+        name="Number",
+        default = 1,
+        description="Set the number of billboards"
+    )
+    scale_billboards: FloatVectorProperty(
+        name="Scale",
+        default=(1, 1),
+        description="Set the scale of the billboards regarding the bounding box of the mesh",
+        size = 2
+    )
+
+    def execute(self, context):
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        generate_srt_billboards(context, self.number_billboards, self.scale_billboards)
+        return {'FINISHED'}
+    
 class SpeedTreeMenu(bpy.types.Menu):
     bl_label = "SpeedTree"
     bl_idname = "VIEW3D_MT_object_SpeedTree_menu"
 
     def draw(self, context):
         layout = self.layout
-
+        
+        layout.operator(MakeItBranch.bl_idname, text = "Make it Branch", icon = 'MESH_CYLINDER')
+        layout.operator(MakeItFrond.bl_idname, text = "Make it Frond", icon = 'MESH_PLANE')
+        layout.operator(MakeItFacingLeave.bl_idname, text = "Make it Facing Leave", icon = 'MESH_PLANE')
+        layout.operator(GenerateSRTBillboards.bl_idname, text = "Generate Billboards", icon = 'MESH_PLANE')
         layout.operator(AddSRTCollisionSphere.bl_idname, text = "Add Collision Sphere", icon='MESH_UVSPHERE')
         layout.operator(AddSRTSphereConnection.bl_idname, text = "Add Sphere Connection", icon='MESH_CAPSULE')
+        
 
 class SpeedTreeMainPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
@@ -406,7 +487,7 @@ PROPS = [
     ))
 ]
 
-CLASSES = [ImportSrtJson, ExportSrtJson, AddSRTCollisionSphere, AddSRTSphereConnection, SpeedTreeMenu, SpeedTreeMainPanel, SpeedTreeFacingLeavesPanel, SpeedTreeLODPanel]
+CLASSES = [ImportSrtJson, ExportSrtJson, AddSRTCollisionSphere, AddSRTSphereConnection, MakeItBranch, MakeItFrond, MakeItFacingLeave, GenerateSRTBillboards, SpeedTreeMenu, SpeedTreeMainPanel, SpeedTreeFacingLeavesPanel, SpeedTreeLODPanel]
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):

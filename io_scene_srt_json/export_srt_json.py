@@ -137,7 +137,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                 billboard_rotated = []
                 billboard0_cutout_verts = []
                 billboard0_cutout_indices = []
-                if len(billboard0.materials) > 0:
+                if billboard0.materials:
                     billboard_mat = billboard0.materials[0].node_tree.nodes
                     if "Billboard Diffuse Texture" in billboard_mat:
                         if billboard_mat["Billboard Diffuse Texture"].image:
