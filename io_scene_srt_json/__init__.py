@@ -197,7 +197,7 @@ class ExportSrtJson(Operator, ExportHelper):
         
         return {'FINISHED'}
     
-class AddSRTCollisionSphere(Operator, AddObjectHelper):
+class AddSRTCollisionSphere(Operator):
     """Create a new Collision Sphere"""
     bl_idname = "speed_tree.add_srt_collision_sphere"
     bl_label = "Add Collision Sphere"
@@ -279,7 +279,7 @@ class MakeItFacingLeave(Operator):
         make_it_facing_leave(context)
         return {'FINISHED'}
     
-class GenerateSRTBillboards(Operator, AddObjectHelper):
+class GenerateSRTBillboards(Operator):
     """Generate Billboards"""
     bl_idname = "speed_tree.generate_srt_billboards"
     bl_label = "Generate Billboards"
