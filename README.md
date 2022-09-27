@@ -1,9 +1,9 @@
 # Blender_SRT_JSON_Addon
-An addon to mod Witcher 3's vegetation. Developed for Blender 2.92, other versions are not tested.
+An addon to mod Witcher 3's vegetation. Developed for Blender 3.3.0, other versions are not tested.
 
 Import/Export .json files dumpable and readable by wolven kit to make them srt (Real Time SpeedTree Meshes).
 
-- Supports only branches, fronds and facing leaves geometry at the moment.
+- Supports all geometry types except rigid meshes.
 - Supports SpeedTree LOD system parameters.
 - Supports most of Speedtree shader's parameters. 
 
