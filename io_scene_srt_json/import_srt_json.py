@@ -28,7 +28,7 @@ def GetVertValues(prop):
             values = prop["FloatValues"]
             for i in range(size):
                 prop_values.append(float(values[i]))
-    return(prop_values)
+    return prop_values
         
 def JoinThem(mesh_names):
     bpy.context.view_layer.objects.active = None
@@ -37,6 +37,11 @@ def JoinThem(mesh_names):
         bpy.context.view_layer.objects.active = bpy.data.objects[mesh_names[j]]
         bpy.context.active_object.select_set(state=True)
     bpy.ops.object.join()
+    # Purge orphan data left by the joining
+    override = bpy.context.copy()
+    override["area.type"] = ['OUTLINER']
+    override["display_mode"] = ['ORPHAN_DATA']
+    bpy.ops.outliner.orphans_purge(override) 
 
 def read_srt_json(context, filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
@@ -102,7 +107,8 @@ def read_srt_json(context, filepath):
         bb_top = float(srt["VerticalBillboards"]["FTopPos"])
         bb_bottom = float(srt["VerticalBillboards"]["FBottomPos"])
         nbb = int(srt["VerticalBillboards"]["NNumBillboards"])
-        angle_diff = 360/nbb
+        if nbb>0:
+            angle_diff = 360/nbb
         bb_texCoords = srt["VerticalBillboards"]["PTexCoords"]
         bb_rotations = srt["VerticalBillboards"]["PRotated"]
         ncutout = srt["VerticalBillboards"]["NNumCutoutVertices"]
@@ -258,6 +264,7 @@ def read_srt_json(context, filepath):
             branches_wind = []
             wind_extras = []
             wind_flags = []
+            leaf_anchor_points = []
             branches_seam_diff = []
             branches_seam_det = []
             tangents = []
@@ -302,7 +309,11 @@ def read_srt_json(context, filepath):
             ambientOcclusion_bool = mesh_call["PRenderState"]["BAmbientOcclusion"]
             castShadows_bool = mesh_call["PRenderState"]["BCastsShadows"]
             alphaMaskOpaque_bool = mesh_call["PRenderState"]["BDiffuseAlphaMaskIsOpaque"]
-            leafCard_bool = mesh_call["PRenderState"]["BFacingLeavesPresent"]
+            branches_bool = mesh_call["PRenderState"]["BBranchesPresent"]
+            fronds_bool = mesh_call["PRenderState"]["BFrondsPresent"]
+            leaves_bool = mesh_call["PRenderState"]["BLeavesPresent"]
+            facingLeaves_bool = mesh_call["PRenderState"]["BFacingLeavesPresent"]
+            rigidMesh_bool = mesh_call["PRenderState"]["BRigidMeshesPresent"]
 
             # For each vertex
             for k in range(nverts):
@@ -315,72 +326,77 @@ def read_srt_json(context, filepath):
                             verts.append(GetVertValues(prop))
 
                     # LOD Position
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_LOD_POSITION":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_LOD_POSITION":
                         if prop["ValueCount"] > 0:
                             verts_lod.append(GetVertValues(prop))
 
                     # Normal
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_NORMAL":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_NORMAL":
                         if prop["ValueCount"] > 0:
                             normals.append(GetVertValues(prop))
 
                     # Tangent
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_TANGENT":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_TANGENT":
                         if prop["ValueCount"] > 0:
                             tangents.append(GetVertValues(prop))
 
                     # UV1
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS":
                         if prop["ValueCount"] > 0:
                             uvs_diff.append(GetVertValues(prop))
 
                     # UV2
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_DETAIL_TEXCOORDS":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_DETAIL_TEXCOORDS":
                         if prop["ValueCount"] > 0:
                             uvs_det.append(GetVertValues(prop))
 
                     # Geom Type
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT":
                         if prop["ValueCount"] > 0:
                             geom_types.append(GetVertValues(prop))
                             
                     # Leaf Card Corner
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_CORNER":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_CORNER":
                         if prop["ValueCount"] > 0:
                             leaf_card_corners.append(GetVertValues(prop))
                             
                     # Leaf Card LOD Scalar
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR":
                         if prop["ValueCount"] > 0:
                             leaf_card_lod_scalars.append(GetVertValues(prop))
 
                     # Wind branch data
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_BRANCH_DATA":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_WIND_BRANCH_DATA":
                         if prop["ValueCount"] > 0:
                             branches_wind.append(GetVertValues(prop))
                             
                     # Wind extra data
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_EXTRA_DATA":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_WIND_EXTRA_DATA":
                         if prop["ValueCount"] > 0:
                             wind_extras.append(GetVertValues(prop))
                             
                     # Wind Flag
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_WIND_FLAGS":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_WIND_FLAGS":
                         if prop["ValueCount"] > 0:
                             wind_flags.append(GetVertValues(prop))
+                            
+                    # Leaf Anchor Point
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_LEAF_ANCHOR_POINT":
+                        if prop["ValueCount"] > 0:
+                            leaf_anchor_points.append(GetVertValues(prop))
 
                     # Branch seam diffuse
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE":
                         if prop["ValueCount"] > 0:
                             branches_seam_diff.append(GetVertValues(prop))
 
                     # Branch seam detail
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_BRANCH_SEAM_DETAIL":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_BRANCH_SEAM_DETAIL":
                         if prop["ValueCount"] > 0:
                             branches_seam_det.append(GetVertValues(prop))
 
                     # Ambient occlusion
-                    if prop["PropertyName"] == "VERTEX_PROPERTY_AMBIENT_OCCLUSION":
+                    elif prop["PropertyName"] == "VERTEX_PROPERTY_AMBIENT_OCCLUSION":
                         if prop["ValueCount"] > 0:
                             ambients.append(GetVertValues(prop))
 
@@ -446,22 +462,20 @@ def read_srt_json(context, filepath):
                     
             # Ambient Occlusion
             if ambients:
-                mesh.vertex_colors.new(name="AmbientOcclusion")
-                for face in mesh.polygons:
-                    for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                        mesh.vertex_colors["AmbientOcclusion"].data[loop_idx].color = [ambients[vert_idx][0], ambients[vert_idx][0], ambients[vert_idx][0], 1]
+                mesh.color_attributes.new(name="AmbientOcclusion", domain = 'POINT', type = 'BYTE_COLOR')
+                for vert in mesh.vertices:
+                    mesh.color_attributes["AmbientOcclusion"].data[vert.index].color = [ambients[vert.index][0]]*3 + [1]
                     
             # Seam Blending
             if branches_seam_diff:
-                mesh.vertex_colors.new(name="SeamBlending")
-                for face in mesh.polygons:
-                    for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                        mesh.vertex_colors["SeamBlending"].data[loop_idx].color = [branches_seam_diff[vert_idx][2], branches_seam_diff[vert_idx][2], branches_seam_diff[vert_idx][2], 1]
+                mesh.color_attributes.new(name="SeamBlending", domain = 'POINT', type = 'BYTE_COLOR')
+                for vert in mesh.vertices:
+                    mesh.color_attributes["SeamBlending"].data[vert.index].color = [branches_seam_diff[vert.index][2]]*3 + [1]
             
             mesh2 = bpy.data.objects[bpy.context.active_object.name]
             
             #Geometry type
-            if not geom_types and leafCard_bool:
+            if not geom_types and facingLeaves_bool:
                 for vert in verts:
                     geom_types.append([3])
             if geom_types:
@@ -512,6 +526,12 @@ def read_srt_json(context, filepath):
                 leaf_card_lod_scalars = np.array(leaf_card_lod_scalars).flatten()
                 mesh2.data.attributes.new(name='leafCardLodScalar', type='FLOAT', domain='POINT')
                 mesh2.data.attributes['leafCardLodScalar'].data.foreach_set('value', leaf_card_lod_scalars)
+                
+            # Leaf Anchor Point
+            if leaf_anchor_points:
+                leaf_anchor_points = np.array(leaf_anchor_points).flatten()
+                mesh2.data.attributes.new(name='leafAnchorPoint', type='FLOAT_VECTOR', domain='POINT')
+                mesh2.data.attributes['leafAnchorPoint'].data.foreach_set('vector', leaf_anchor_points)
                 
             # Add verts position and lod position as attributes   
             if verts:
@@ -689,7 +709,7 @@ def read_srt_json(context, filepath):
             node_frame_shininess.label = "Shininess"
             node_frame_shininess.label_size = 28
             node_map_range_shininess = temp_mat.node_tree.nodes.new(type = 'ShaderNodeMapRange')
-            node_map_range_shininess.inputs['From Max'].default_value = 100.0
+            node_map_range_shininess.inputs['From Max'].default_value = 200.0
             node_map_range_shininess.location = (-100, -950)
             node_invert_shininess = temp_mat.node_tree.nodes.new(type = 'ShaderNodeInvert')
             node_invert_shininess.name = 'Invert Shininess'
@@ -1163,23 +1183,28 @@ def read_srt_json(context, filepath):
         # Geometry nodes for Facing Leaves
         bpy.context.active_object.modifiers.new(type='NODES', name = "Leaf Card")
         geom_nodes = bpy.context.active_object.modifiers[0]
+        bpy.ops.node.new_geometry_node_group_assign()
         start_geom = geom_nodes.node_group.nodes['Group Input']
         end_geom = geom_nodes.node_group.nodes['Group Output']
-        leaf_card_transform = geom_nodes.node_group.nodes.new(type = "GeometryNodePointTranslate")
+        node_transform = geom_nodes.node_group.nodes.new(type = 'GeometryNodeSetPosition')
+        node_transform.location = (20,0)
+        leaf_card_transform = geom_nodes.node_group.nodes.new(type = 'GeometryNodeInputNamedAttribute')
         leaf_card_transform.name = 'Leaf Card Corner'
-        leaf_card_transform.inputs['Translation'].default_value = "leafCardCorner"
-        leaf_card_transform.location = (50, 0)
-        leaf_card_lod_scalar = geom_nodes.node_group.nodes.new(type = "GeometryNodeAttributeVectorMath")
+        leaf_card_transform.data_type = 'FLOAT_VECTOR'
+        leaf_card_transform.inputs['Name'].default_value = "leafCardCorner"
+        leaf_card_transform.location = (-330, -100)
+        leaf_card_lod_scalar = geom_nodes.node_group.nodes.new(type = 'GeometryNodeInputNamedAttribute')
         leaf_card_lod_scalar.name = 'Leaf Card LOD Scalar'
-        leaf_card_lod_scalar.operation = 'MULTIPLY'
-        leaf_card_lod_scalar.input_type_b = 'VECTOR'
-        leaf_card_lod_scalar.inputs['A'].default_value = "leafCardCorner"
-        leaf_card_lod_scalar.inputs['B'].default_value = 'leafCardLodScalar'
-        leaf_card_lod_scalar.inputs[4].default_value = (1,1,1)
-        leaf_card_lod_scalar.inputs['Result'].default_value = "leafCardCorner"
-        leaf_card_lod_scalar.location = (-150, 0)
-        geom_nodes.node_group.links.new(start_geom.outputs['Geometry'], leaf_card_lod_scalar.inputs["Geometry"])
-        geom_nodes.node_group.links.new(leaf_card_lod_scalar.outputs['Geometry'], leaf_card_transform.inputs["Geometry"])
-        geom_nodes.node_group.links.new(leaf_card_transform.outputs['Geometry'], end_geom.inputs["Geometry"])
+        leaf_card_lod_scalar.data_type = 'FLOAT_VECTOR'
+        leaf_card_lod_scalar.inputs['Name'].default_value = "leafCardLodScalar"
+        leaf_card_lod_scalar.location = (-330, -220)
+        vector_math = geom_nodes.node_group.nodes.new(type = 'ShaderNodeVectorMath')
+        vector_math.operation = 'MULTIPLY'
+        vector_math.inputs[1].default_value = (1,1,1)
+        vector_math.location = (-150, 0)
+        geom_nodes.node_group.links.new(start_geom.outputs['Geometry'], node_transform.inputs["Geometry"])
+        geom_nodes.node_group.links.new(vector_math.outputs['Vector'], node_transform.inputs["Offset"])
+        geom_nodes.node_group.links.new(node_transform.outputs['Geometry'], end_geom.inputs["Geometry"])
+        geom_nodes.node_group.links.new(leaf_card_transform.outputs['Attribute'], vector_math.inputs[0])
         
     bpy.context.view_layer.active_layer_collection = parent_coll.children[main_coll_name]

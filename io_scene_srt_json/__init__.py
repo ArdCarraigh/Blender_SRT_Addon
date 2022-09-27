@@ -353,8 +353,34 @@ class SpeedTreeFacingLeavesPanel(bpy.types.Panel):
                     row = layout.row()
                     col = row.column()
                     col.prop(wm, "leafCardCornerTransform", text = "Leaf Card Corner Transform")
-                    if wm.leafCardCornerTransform != me.data.attributes['leafCardCorner'].data[v_index].vector:
-                        wm.leafCardCornerTransform = me.data.attributes['leafCardCorner'].data[v_index].vector
+                    if wm.leafCardCornerTransform != bm.verts[v_index][bm.verts.layers.float_vector['leafCardCorner']]:
+                        wm.leafCardCornerTransform = bm.verts[v_index][bm.verts.layers.float_vector['leafCardCorner']]
+                        
+class SpeedTreeLeavesPanel(bpy.types.Panel):
+    bl_parent_id = 'VIEW3D_PT_SpeedTree_panel'
+    bl_label = 'Leaves'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'SpeedTree'
+    
+    def draw(self, context):
+        layout = self.layout
+        wm = context.window_manager
+        me = context.object
+        if me.data.is_editmode:
+            bm = bmesh.from_edit_mesh(me.data)
+            if bm.select_history.active is not None:
+                v_index = bm.select_history.active.index
+                for g in me.data.vertices[v_index].groups:
+                    if me.vertex_groups[g.group].name == "GeomType":
+                        geom_type = int(g.weight*5-1)
+                        break
+                if geom_type == 2 and 'leafAnchorPoint' in me.data.attributes:
+                    row = layout.row()
+                    col = row.column()
+                    col.prop(wm, "leafAnchorPoint", text = "Leaf Anchor Point")
+                    if wm.leafAnchorPoint != bm.verts[v_index][bm.verts.layers.float_vector['leafAnchorPoint']]:
+                        wm.leafAnchorPoint = bm.verts[v_index][bm.verts.layers.float_vector['leafAnchorPoint']]
                         
 class SpeedTreeLODPanel(bpy.types.Panel):
     bl_parent_id = 'VIEW3D_PT_SpeedTree_panel'
@@ -391,8 +417,8 @@ class SpeedTreeLODPanel(bpy.types.Panel):
                         row.label(text="Leaf Card LOD Scalar")
                         row = layout.row()
                         row.prop(wm, "leafCardLodScalar", text="")
-                        if wm.leafCardLodScalar != me.data.attributes['leafCardLodScalar'].data[v_index].value:
-                            wm.leafCardLodScalar = me.data.attributes['leafCardLodScalar'].data[v_index].value
+                        if wm.leafCardLodScalar != bm.verts[v_index][bm.verts.layers.float['leafCardLodScalar']]:
+                            wm.leafCardLodScalar = bm.verts[v_index][bm.verts.layers.float['leafCardLodScalar']]
         
 def updateLeafCorner(self, context):
     if 'leafCardCorner' in bpy.context.active_object.data.attributes:
@@ -403,6 +429,17 @@ def updateLeafCorner(self, context):
         ob.data.vertices.foreach_get('select', sel)
         v_index = list(sel).index(True)
         ob.data.attributes['leafCardCorner'].data[v_index].vector = self.leafCardCornerTransform
+        bpy.ops.object.mode_set(mode='EDIT', toggle = False)
+        
+def updateLeafAnchorPoint(self, context):
+    if 'leafAnchorPoint' in bpy.context.active_object.data.attributes:
+        bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
+        ob = bpy.context.active_object
+        count = len(ob.data.vertices)
+        sel = np.zeros(count, dtype=np.bool)
+        ob.data.vertices.foreach_get('select', sel)
+        v_index = list(sel).index(True)
+        ob.data.attributes['leafAnchorPoint'].data[v_index].vector = self.leafAnchorPoint
         bpy.ops.object.mode_set(mode='EDIT', toggle = False)
         
 def updateLodPreview(self, context):
@@ -417,9 +454,9 @@ def updateLodPreview(self, context):
             if obj.modifiers:
                 geom_nodes = obj.modifiers[0]
                 if 'Leaf Card LOD Scalar' in geom_nodes.node_group.nodes and 'Leaf Card Corner' in geom_nodes.node_group.nodes:
+                    vector_math = geom_nodes.node_group.nodes["Vector Math"]
                     leaf_card_lod_scalar = geom_nodes.node_group.nodes['Leaf Card LOD Scalar']
-                    leaf_card_lod_scalar.input_type_b = 'ATTRIBUTE'
-                    leaf_card_lod_scalar.inputs['B'].default_value = 'leafCardLodScalar'
+                    geom_nodes.node_group.links.new(leaf_card_lod_scalar.outputs['Attribute'], vector_math.inputs[1])
     else:
         for obj in bpy.data.objects:
             if 'vertexPosition' in obj.data.attributes and 'vertexLodPosition' in obj.data.attributes:
@@ -429,9 +466,9 @@ def updateLodPreview(self, context):
             if obj.modifiers:
                 geom_nodes = obj.modifiers[0]
                 if 'Leaf Card LOD Scalar' in geom_nodes.node_group.nodes and 'Leaf Card Corner' in geom_nodes.node_group.nodes:
-                    leaf_card_lod_scalar = geom_nodes.node_group.nodes['Leaf Card LOD Scalar']
-                    leaf_card_lod_scalar.input_type_b = 'VECTOR'
-                    leaf_card_lod_scalar.inputs[4].default_value = (1,1,1)
+                    vector_math = geom_nodes.node_group.nodes["Vector Math"]
+                    if vector_math.inputs[1].links:
+                        geom_nodes.node_group.links.remove(vector_math.inputs[1].links[0])
     if prev_mode == 'EDIT_MESH':
         bpy.ops.object.mode_set(mode='EDIT', toggle = False)
         
@@ -466,6 +503,13 @@ PROPS = [
         subtype = 'COORDINATES',
         precision = 6
     )),
+("leafAnchorPoint", FloatVectorProperty(
+        name="Leaf Anchor Point",
+        update = updateLeafAnchorPoint,
+        description="Set the anchor point of the selected vertex",
+        subtype = 'COORDINATES',
+        precision = 6
+    )),
 ("previewLod", BoolProperty(
         name="Preview LOD",
         update = updateLodPreview,
@@ -487,7 +531,7 @@ PROPS = [
     ))
 ]
 
-CLASSES = [ImportSrtJson, ExportSrtJson, AddSRTCollisionSphere, AddSRTSphereConnection, MakeItBranch, MakeItFrond, MakeItFacingLeave, GenerateSRTBillboards, SpeedTreeMenu, SpeedTreeMainPanel, SpeedTreeFacingLeavesPanel, SpeedTreeLODPanel]
+CLASSES = [ImportSrtJson, ExportSrtJson, AddSRTCollisionSphere, AddSRTSphereConnection, MakeItBranch, MakeItFrond, MakeItFacingLeave, GenerateSRTBillboards, SpeedTreeMenu, SpeedTreeMainPanel, SpeedTreeFacingLeavesPanel, SpeedTreeLeavesPanel, SpeedTreeLODPanel]
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):

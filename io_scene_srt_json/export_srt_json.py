@@ -245,6 +245,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         wind_flags = []
                         leaf_card_corners = []
                         leaf_card_lod_scalars = []
+                        leaf_anchor_points = []
                         branches_seam_diff = []
                         branches_seam_det = []
                         seam_blending = []
@@ -264,9 +265,17 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 leaf_card_coord_z = leaf_card_corners[-1][1]
                                 leaf_card_corners[-1].pop(1)
                                 leaf_card_corners[-1].append(leaf_card_coord_z)
-                            #Leaf Card LOD Scalar
+                            # Leaf Card LOD Scalar
                             if 'leafCardLodScalar' in mesh.data.attributes:
                                 leaf_card_lod_scalars.append(mesh.data.attributes['leafCardLodScalar'].data[vert.index].value)
+                            # Leaf Anchor Point
+                            if 'leafAnchorPoint' in mesh.data.attributes:
+                                leaf_anchor_points.append(list(mesh.data.attributes['leafAnchorPoint'].data[vert.index].vector))
+                            # Vertex Colors (Ambient Occlusion and Seam Blending)
+                            if "AmbientOcclusion" in mesh.data.color_attributes:
+                                ambients.append(mesh.data.color_attributes['AmbientOcclusion'].data[vert.index].color[0])
+                            if "SeamBlending" in mesh.data.color_attributes:
+                                seam_blending.append(mesh.data.color_attributes['SeamBlending'].data[vert.index].color[0])
                             # Wind data and Geom Type
                             #Add values if missing just to make the exporter more robust
                             if not vert.groups:
@@ -326,12 +335,6 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             branches_seam_diff = GetLoopDataPerVertex(mesh, "UV", "SeamDiffuseUV")
                         if "SeamDetailUV" in mesh.data.uv_layers:
                             branches_seam_det = GetLoopDataPerVertex(mesh, "UV", "SeamDetailUV")
-                            
-                        # Vertex Colors (Ambient Occlusion and Seam Blending)
-                        if "AmbientOcclusion" in mesh.data.vertex_colors:
-                            ambients = GetLoopDataPerVertex(mesh, "VERTEXCOLOR", "AmbientOcclusion")
-                        if "SeamBlending" in mesh.data.vertex_colors:
-                            seam_blending = GetLoopDataPerVertex(mesh, "VERTEXCOLOR", "SeamBlending")
                             
                         # Write data per vertex
                         properties = ["START"]
@@ -500,6 +503,21 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     attributes += [attrib_name3]*4
                                     num_attrib += 1
                                 offset += 8
+                            # Leaf Anchor Point
+                            if leaf_anchor_points and geom_types[0] == 2:
+                                srtVert["VertexProperties"][11]["ValueCount"] =  3
+                                srtVert["VertexProperties"][11]["FloatValues"] =  leaf_anchor_points[i]
+                                srtVert["VertexProperties"][11]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
+                                srtVert["VertexProperties"][11]["ValueOffsets"] = [offset, offset +2, offset + 4]
+                                if properties[-1] != "END":
+                                    properties += ["VERTEX_PROPERTY_LEAF_ANCHOR_POINT"] * 3
+                                    components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
+                                    offsets += [offset, offset +2, offset + 4]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
+                                    attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                    attributes += [attrib_name4]*3
+                                    num_attrib += 1
+                                offset += 6
                             # Branch Seam Detail
                             if branches_seam_det and seam_blending and geom_types[0] == 0:
                                 srtVert["VertexProperties"][14]["ValueCount"] =  2
@@ -899,6 +917,20 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                             srtAttributes[10]["AeAttribComponents"] = [attributes_components[x] for x in attrib10]
                             srtAttributes[10]["AuiOffsets"] = [offsets[x] for x in attrib10]
                             srtAttributes[10]["EFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
+                        # Attrib 11
+                        if "VERTEX_PROPERTY_LEAF_ANCHOR_POINT" in properties:
+                            attrib11 = [-1,-1,-1,-1]
+                            for i in range(len(properties)):
+                                if properties[i] == "VERTEX_PROPERTY_LEAF_ANCHOR_POINT" and components[i] == "VERTEX_COMPONENT_X":
+                                    attrib11[0] = i
+                                if properties[i] == "VERTEX_PROPERTY_LEAF_ANCHOR_POINT" and components[i] == "VERTEX_COMPONENT_Y":
+                                    attrib11[1] = i
+                                if properties[i] == "VERTEX_PROPERTY_LEAF_ANCHOR_POINT" and components[i] == "VERTEX_COMPONENT_Z":
+                                    attrib11[2] = i
+                            srtAttributes[11]["AeAttribs"] = [attributes[x] for x in attrib11]
+                            srtAttributes[11]["AeAttribComponents"] = [attributes_components[x] for x in attrib11]
+                            srtAttributes[11]["AuiOffsets"] = [offsets[x] for x in attrib11]
+                            srtAttributes[11]["EFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
                         # Attrib 13
                         if "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE" in properties:
                             attrib13 = [-1,-1,-1,-1]
