@@ -9,8 +9,8 @@ import operator
 import copy
 from mathutils import Vector
 from bpy_extras.object_utils import object_data_add
-from io_scene_srt_json import import_srt_json
-from io_scene_srt_json.import_srt_json import JoinThem
+from io_scene_srt_json.tools import srt_mesh_setup
+from io_scene_srt_json.tools.srt_mesh_setup import get_parent_collection
 
 def GetLoopDataPerVertex(mesh, type, layername = None):
     vert_ids = []
@@ -50,24 +50,57 @@ def getAttributesComponents(attributes):
                 components += ["VERTEX_COMPONENT_W"]
     return(components)
     
+def JoinThem(mesh_names):
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action='DESELECT')
+    for j in reversed(range(len(mesh_names))):
+        bpy.context.view_layer.objects.active = bpy.data.objects[mesh_names[j]]
+        bpy.context.active_object.select_set(state=True)
+    bpy.ops.object.join()
+    # Purge orphan data left by the joining
+    override = bpy.context.copy()
+    override["area.type"] = ['OUTLINER']
+    override["display_mode"] = ['ORPHAN_DATA']
+    bpy.ops.outliner.orphans_purge(override)
 
-def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3D,
-        lodDist_HighDetail3D, lodDist_LowDetail3D, lodDist_RangeBillboard,
-        lodDist_StartBillboard, lodDist_EndBillboard, grass):
+def write_srt_json(context, filepath):
+    wm = bpy.context.window_manager
+    wm.EShaderGenerationMode = 'SHADER_GEN_MODE_UNIFIED_SHADERS'
+    active_coll = bpy.context.view_layer.active_layer_collection
+    parent_colls = []
+    main_coll = []
+    collision_coll = []
+    bb_coll = []
+    #horiz_coll = []
+    lod_colls = []
+    get_parent_collection(active_coll, parent_colls)
+    if re.search("SRT Asset", active_coll.name):
+        main_coll = active_coll.collection
+    elif parent_colls:
+        if re.search("SRT Asset", parent_colls[0].name):
+            main_coll = parent_colls[0]
             
-    if bpy.data.window_managers['WinMan'].previewLod:
-        bpy.data.window_managers['WinMan'].previewLod = False
-    main_coll = bpy.context.view_layer.active_layer_collection
-    if re.search("SRT Asset", main_coll.name):
+    if main_coll:
+        for col in main_coll.children:
+            if re.search("Collision Objects", col.name):
+                collision_coll = col
+            if re.search("Vertical Billboards", col.name):
+                bb_coll = col
+            #if re.search("Horizontal Billboard", col.name):
+            #    horiz_coll = col
+            if re.search("LOD", col.name):
+                lod_colls.append(col)
+            
+        wm.previewLod = False
         # Open main template
         os.chdir(os.path.dirname(__file__))
         with open("templates/mainTemplate.json", 'r', encoding='utf-8') as mainfile:
             srtMain = json.load(mainfile)
             
-        # Get and Write Collisions
-        if "Collision Objects" in main_coll.collection.children:
-            collisionObjects = main_coll.collection.children["Collision Objects"].objects
-            if len(collisionObjects) > 0:
+        # Get and Write Collisions #CollisionObjects
+        if collision_coll:
+            collisionObjects = collision_coll.objects
+            if collisionObjects:
                 for collisionObject in collisionObjects:
                     bpy.context.view_layer.objects.active = None
                     bpy.ops.object.select_all(action='DESELECT')
@@ -76,6 +109,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
                     with open("templates/collisionTemplate.json", 'r', encoding='utf-8') as collisionfile:
                         srtCollision = json.load(collisionfile)
+                        
                     if len(collisionObject.data.materials) <= 1:
                         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME', center='MEDIAN')
                         collisionObject_vert_coord = collisionObject.data.vertices[0].co
@@ -89,10 +123,11 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         srtCollision["m_vCenter2"]["z"] = collisionObject_position[2]
                         srtCollision["m_fRadius"] = collisionObject_radius
                         bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
+                        
                     else:
                         coll_mesh_name = collisionObject.name
                         bpy.ops.mesh.separate(type='MATERIAL')
-                        collisionObjects2 = main_coll.collection.children["Collision Objects"].objects
+                        collisionObjects2 = collision_coll.objects
                         coll_mesh_names = []
                         for collisionObject2 in collisionObjects2:
                             if re.search(coll_mesh_name, collisionObject2.name):
@@ -123,89 +158,148 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
         else:
             srtMain.pop("CollisionObjects")
             
-        # Get and Write Vertical Billboards
+        # Get and Write Vertical Billboards #VerticalBillboards
+        if bb_coll:
+            billboard_uvs = []
+            billboard_rotated = []
+            billboard_cutout_verts = []
+            billboard_cutout_indices = []
+            billboards = re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects]))
+            cutout = re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))
+            if billboards:
+                for billboard in billboards:
+                    billboard_uv_x = []
+                    billboard_uv_y = []
+                    bb = bb_coll.objects[billboard]
+                    bpy.context.view_layer.objects.active = None
+                    bpy.ops.object.select_all(action='DESELECT')
+                    bpy.context.view_layer.objects.active = bb
+                    bpy.context.active_object.select_set(state=True)
+                    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                    for face in bb.data.polygons:
+                        for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
+                            billboard_uv_x.append(bb.data.uv_layers[0].data[loop_idx].uv.x)
+                            billboard_uv_y.append(bb.data.uv_layers[0].data[loop_idx].uv.y)
+                    billboard_uv_sum = list(map(operator.add, billboard_uv_x, billboard_uv_y))
+                    if billboard_uv_sum.index(min(billboard_uv_sum)) == 0:
+                        billboard_rotated.append(0)
+                        billboard_uvs.append(billboard_uv_x[0])
+                        billboard_uvs.append(1-billboard_uv_y[0])
+                        billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
+                        billboard_uvs.append((1-billboard_uv_y[2]) - (1-billboard_uv_y[0]))
+                    elif billboard_uv_sum.index(min(billboard_uv_sum)) == 2:
+                        billboard_rotated.append(1)
+                        billboard_uvs.append(billboard_uv_x[0])
+                        billboard_uvs.append(1-billboard_uv_y[2])
+                        billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
+                        billboard_uvs.append((1-billboard_uv_y[0]) - (1-billboard_uv_y[2]))
+            
+            if cutout:            
+                cut = bb_coll.objects[cutout[0]]
+                billboard_cutout_nverts = len(cut.data.vertices)
+                for vert in cut.data.vertices:
+                    billboard_cutout_verts.append((vert.co.x - -wm.FWidth/2)/wm.FWidth)
+                    billboard_cutout_verts.append((vert.co.z - wm.FBottomPos)/(wm.FTopPos - wm.FBottomPos))
+                for face in cut.data.polygons:
+                    for vertex in face.vertices:
+                        billboard_cutout_indices.append(vertex)
+                       
+            srtMain["VerticalBillboards"]["FWidth"] = wm.FWidth
+            srtMain["VerticalBillboards"]["FTopPos"] = wm.FTopPos
+            srtMain["VerticalBillboards"]["FBottomPos"] = wm.FBottomPos
+            srtMain["VerticalBillboards"]["NNumBillboards"] = wm.NNumBillboards
+            srtMain["VerticalBillboards"]["PTexCoords"] = billboard_uvs
+            srtMain["VerticalBillboards"]["PRotated"] = billboard_rotated
+            srtMain["VerticalBillboards"]["NNumCutoutVertices"] = billboard_cutout_nverts
+            srtMain["VerticalBillboards"]["PCutoutVertices"] = billboard_cutout_verts
+            srtMain["VerticalBillboards"]["NNumCutoutIndices"] = len(billboard_cutout_indices)
+            srtMain["VerticalBillboards"]["PCutoutIndices"] = billboard_cutout_indices
+            
+        #Get and Write Horizontal Billboard #HorizontalBillboard    #Unsupported by RedEngine
+                                                                    # But remains here in case
+                                                                    # I decide to support others
+                                                                    # shader generation mode
+        #if horiz_coll:
+        #    horiz_bb_verts = []
+        #    horiz_bb_uvs = []
+        #    horiz_bb = horiz_coll.objects[0]
+        #    bpy.context.view_layer.objects.active = None
+        #    bpy.ops.object.select_all(action='DESELECT')
+        #    bpy.context.view_layer.objects.active = horiz_bb
+        #    bpy.context.active_object.select_set(state=True)
+        #    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        #    for vert in horiz_bb.data.vertices:
+        #        horiz_bb_verts.append(vert.co)
+        #    for face in horiz_bb.data.polygons:
+        #        for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
+        #            horiz_bb_uvs.append(horiz_bb.data.uv_layers[0].data[loop_idx].uv.x)
+        #            horiz_bb_uvs.append(1 - horiz_bb.data.uv_layers[0].data[loop_idx].uv.y)
+        #    srtMain["HorizontalBillboard"]["BPresent"] = True
+        #    srtMain["HorizontalBillboard"]["AfTexCoords"] = horiz_bb_uvs
+        #    for i in range(4):
+        #        srtMain["HorizontalBillboard"]["AvPositions"][i]["x"] = horiz_bb_verts[i][0]
+        #        srtMain["HorizontalBillboard"]["AvPositions"][i]["y"] = horiz_bb_verts[i][1]
+        #        srtMain["HorizontalBillboard"]["AvPositions"][i]["z"] = horiz_bb_verts[i][2]
+                
+        #Get and Write Billboard Material #ABillboardRenderStateMain
         bb_textures_names = []
-        if "Vertical Billboards" in main_coll.collection.children:
-            billboardObjects = main_coll.collection.children["Vertical Billboards"].objects
-            if len(billboardObjects) > 0:
-                billboard0 = billboardObjects[0].data
-                billboard_bottom = billboard0.vertices[0].co.z
-                billboard_top = billboard0.vertices[2].co.z
-                billboard_width = abs(billboard0.vertices[0].co.x - billboard0.vertices[2].co.x)
-                billboard_num = 0
-                billboard_uvs = []
-                billboard_rotated = []
-                billboard0_cutout_verts = []
-                billboard0_cutout_indices = []
-                if billboard0.materials:
-                    billboard_mat = billboard0.materials[0].node_tree.nodes
-                    if "Billboard Diffuse Texture" in billboard_mat:
-                        if billboard_mat["Billboard Diffuse Texture"].image:
-                            billboard_diffuse = billboard_mat["Billboard Diffuse Texture"].image.name
-                            srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][0]["Val"] = billboard_diffuse
-                            srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"][0]["Val"] = billboard_diffuse
-                            bb_textures_names.append(billboard_diffuse)
-                    if "Billboard Normal Texture" in billboard_mat:
-                        if billboard_mat["Billboard Normal Texture"].image:
-                            billboard_normal = billboard_mat["Billboard Normal Texture"].image.name
-                            srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][1]["Val"] = billboard_normal
-                            bb_textures_names.append(billboard_normal)
-                for billboardObject in billboardObjects:
-                    if re.search(billboard0.name+"_cutout", billboardObject.name):
-                        billboard0_cutout = billboardObject.data
-                        billboard0_cutout_nverts = len(billboardObject.data.vertices)
-                        for vert in billboardObject.data.vertices:
-                            billboard0_cutout_verts.append((vert.co.x - -billboard_width/2)/billboard_width)
-                            billboard0_cutout_verts.append((vert.co.z - billboard_bottom)/(billboard_top - billboard_bottom))
-                        for face in billboardObject.data.polygons:
-                            for vertex in face.vertices:
-                                billboard0_cutout_indices.append(vertex)
-                    if "_cutout" not in billboardObject.name:
-                        billboard_num += 1
-                        billboard_uv_x = []
-                        billboard_uv_y = []
-                        for face in billboardObject.data.polygons:
-                            for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                                billboard_uv_x.append(billboardObject.data.uv_layers[0].data[loop_idx].uv.x)
-                                billboard_uv_y.append(billboardObject.data.uv_layers[0].data[loop_idx].uv.y)
-                        billboard_uv_sum = list(map(operator.add, billboard_uv_x, billboard_uv_y))
-                        if billboard_uv_sum.index(min(billboard_uv_sum)) == 0:
-                            billboard_rotated.append(0)
-                            billboard_uvs.append(billboard_uv_x[0])
-                            billboard_uvs.append(1-billboard_uv_y[0])
-                            billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
-                            billboard_uvs.append((1-billboard_uv_y[2]) - (1-billboard_uv_y[0]))
-                        elif billboard_uv_sum.index(min(billboard_uv_sum)) == 2:
-                            billboard_rotated.append(1)
-                            billboard_uvs.append(billboard_uv_x[0])
-                            billboard_uvs.append(1-billboard_uv_y[2])
-                            billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
-                            billboard_uvs.append((1-billboard_uv_y[0]) - (1-billboard_uv_y[2]))
-                srtMain["VerticalBillboards"]["FWidth"] = billboard_width
-                srtMain["VerticalBillboards"]["FTopPos"] = billboard_top
-                srtMain["VerticalBillboards"]["FBottomPos"] = billboard_bottom
-                srtMain["VerticalBillboards"]["NNumBillboards"] = billboard_num
-                srtMain["VerticalBillboards"]["PTexCoords"] = billboard_uvs
-                srtMain["VerticalBillboards"]["PRotated"] = billboard_rotated
-                srtMain["VerticalBillboards"]["NNumCutoutVertices"] = billboard0_cutout_nverts
-                srtMain["VerticalBillboards"]["PCutoutVertices"] = billboard0_cutout_verts
-                srtMain["VerticalBillboards"]["NNumCutoutIndices"] = len(billboard0_cutout_indices)
-                srtMain["VerticalBillboards"]["PCutoutIndices"] = billboard0_cutout_indices
-        
+        if bb_coll: #or horiz_coll:
+            for k in srtMain["Geometry"]["ABillboardRenderStateMain"]:
+                if hasattr(wm, k):
+                    srtMain["Geometry"]["ABillboardRenderStateMain"][k] = getattr(wm, k)
+                    if k in ["VAmbientColor", "VDiffuseColor", "VSpecularColor", "VTransmissionColor"]:
+                        srtMain["Geometry"]["ABillboardRenderStateMain"][k] = {'x':getattr(wm, k)[0], 'y':getattr(wm, k)[1], 'z':getattr(wm, k)[2]}
+            
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BUsedAsGrass"] = False
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["ELodMethod"] = "LOD_METHOD_POP"
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["EShaderGenerationMode"] = "SHADER_GEN_MODE_STANDARD"
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["EDetailLayer"] = "EFFECT_OFF"
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["EBranchSeamSmoothing"] = "EFFECT_OFF"
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["EWindLod"] = "WIND_LOD_NONE"
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BBranchesPresent"] = False
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BFrondsPresent"] = False
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BLeavesPresent"] = False
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BFacingLeavesPresent"] = False
+            srtMain["Geometry"]["ABillboardRenderStateMain"]["BRigidMeshesPresent"] = False
+            #if horiz_coll:
+            #    srtMain["Geometry"]["ABillboardRenderStateMain"]["BHorzBillboard"] = True
+                
+            for k in ["diffuseTexture", "normalTexture", "specularTexture", "detailTexture", "detailNormalTexture"]:
+                tex = getattr(wm, k)
+                if tex:
+                    bb_textures_names.append(tex.name)
+                    if k == "diffuseTexture":
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][0]["Val"] = tex.name
+                    if k == "normalTexture":
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][1]["Val"] = tex.name
+                    if k == "detailTexture":
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][2]["Val"] = tex.name
+                    if k == "detailNormalTexture":
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][3]["Val"] = tex.name
+                    if k == "specularTexture":
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][4]["Val"] = tex.name
+                        srtMain["Geometry"]["ABillboardRenderStateMain"]["ApTextures"][5]["Val"] = tex.name
+                        
+            #Write ABillboardRenderStateShadow
+            srtMain["Geometry"]["ABillboardRenderStateShadow"] = copy.deepcopy(srtMain["Geometry"]["ABillboardRenderStateMain"])
+            for i in range(1, len(srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"])):
+                srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"][i]["Val"] = ""
+            srtMain["Geometry"]["ABillboardRenderStateShadow"]["ERenderPass"] = "RENDER_PASS_SHADOW_CAST"
+            srtMain["Geometry"]["ABillboardRenderStateShadow"]["BFadeToBillboard"] = False  
+            
         #Get and Write Meshes#
         lodsNum = 0
         mesh_index = 0
         meshesNum = 0
         textures_names = []
-        for child_coll in main_coll.collection.children:
-            if re.search("LOD", child_coll.name):
-                mesh_objects = main_coll.collection.children[child_coll.name].objects
-                if mesh_objects:
+        if lod_colls:
+            for col in lod_colls:
+                if col.objects:
                     with open("templates/lodTemplate.json", 'r', encoding='utf-8') as lodfile:
                         srtLod = json.load(lodfile)
                     # Get lodsNum
                     lodsNum += 1
-                    for mesh in mesh_objects:
+                    for mesh in col.objects:
                         bpy.context.view_layer.objects.active = None
                         bpy.ops.object.select_all(action='DESELECT')
                         bpy.context.view_layer.objects.active = mesh
@@ -218,11 +312,21 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         bpy.ops.object.mode_set(mode='OBJECT')
                         # Split by materials
                         bpy.ops.mesh.separate(type='MATERIAL')
-                    meshes = main_coll.collection.children[child_coll.name].objects
                     mesh_names = []
-                    for mesh in meshes:
+                    for mesh in col.objects:
                         with open("templates/drawTemplate.json", 'r', encoding='utf-8') as drawfile:
                             srtDraw = json.load(drawfile)
+                        bpy.context.view_layer.objects.active = None
+                        bpy.ops.object.select_all(action='DESELECT')
+                        bpy.context.view_layer.objects.active = mesh
+                        bpy.context.active_object.select_set(state=True)
+                        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                        if wm.BUsedAsGrass:
+                            wm.BBranchesPresent = False
+                            wm.BFrondsPresent = True
+                            wm.BLeavesPresent = True
+                            wm.BFacingLeavesPresent = True
+                            wm.BRigidMeshesPresent = True
                         if "DiffuseUV" in mesh.data.uv_layers:
                             mesh.data.uv_layers.active = mesh.data.uv_layers["DiffuseUV"]
                         mesh.data.calc_normals_split()
@@ -298,8 +402,11 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 if wind_flags:
                                     mesh.vertex_groups["WindFlag"].add([vert.index], random.choice(wind_flags), 'REPLACE')
                             for g in vert.groups:
-                                if mesh.vertex_groups[g.group].name == "GeomType":  
-                                    geom_types.append(int(g.weight*5-1))
+                                if mesh.vertex_groups[g.group].name == "GeomType":
+                                    if wm.BUsedAsGrass:
+                                        geom_types.append(1) 
+                                    else:
+                                        geom_types.append(int(g.weight*5-1))
                                 if mesh.vertex_groups[g.group].name == "WindWeight1":
                                     wind_weight1.append(g.weight)
                                 if mesh.vertex_groups[g.group].name == "WindWeight2":
@@ -373,7 +480,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     attributes += [attrib_name0]*3
                                 offset += 6
                             # Lod position
-                            if verts_lod and geom_types[0] != 3:
+                            if verts_lod and (not wm.BFacingLeavesPresent or (wm.BFacingLeavesPresent and wm.BLeavesPresent)):
                                 srtVert["VertexProperties"][3]["ValueCount"] =  3
                                 srtVert["VertexProperties"][3]["FloatValues"] =  verts_lod[i]
                                 srtVert["VertexProperties"][3]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -382,16 +489,16 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_LOD_POSITION"] * 3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset + 6, offset + 8]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
                                         attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
                                         num_attrib += 1
                                     attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
                                     num_attrib += 1
-                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     attributes += [attrib_name0, attrib_name1, attrib_name1]
                                 offset += 6
                             # Leaf Card Corner
-                            if leaf_card_corners and geom_types[0] == 3:
+                            if leaf_card_corners and wm.BFacingLeavesPresent and not wm.BLeavesPresent:
                                 srtVert["VertexProperties"][5]["ValueCount"] =  3
                                 srtVert["VertexProperties"][5]["FloatValues"] =  leaf_card_corners[i]
                                 srtVert["VertexProperties"][5]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -400,13 +507,13 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_LEAF_CARD_CORNER"] * 3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset + 6, offset + 8]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
                                         attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
                                         num_attrib += 1
                                     if attrib_name1 == "VERTEX_ATTRIB_UNASSIGNED":
                                         attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
                                         num_attrib += 1
-                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     attributes += [attrib_name0, attrib_name1, attrib_name1]
                                 offset += 6
                             # Diffuse UV
@@ -426,7 +533,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     attributes [-2:-2] = [attrib_name1]*2
                                 offset += 4
                             # Geometry Type
-                            if geom_types[0] != 3:
+                            if geom_types[0] != -1 or (not wm.BFacingLeavesPresent or (wm.BFacingLeavesPresent and wm.BLeavesPresent)):
                                 srtVert["VertexProperties"][4]["ValueCount"] =  1
                                 srtVert["VertexProperties"][4]["FloatValues"] =  [geom_types[i]]
                                 srtVert["VertexProperties"][4]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -440,8 +547,24 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     num_attrib += 1
                                     attributes += [attrib_name2]
                                 offset += 2
+                            ### Leaf Card Corner FOR GRASS ###
+                            if leaf_card_corners and wm.BFacingLeavesPresent and wm.BLeavesPresent:
+                                srtVert["VertexProperties"][5]["ValueCount"] =  3
+                                srtVert["VertexProperties"][5]["FloatValues"] =  leaf_card_corners[i]
+                                srtVert["VertexProperties"][5]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
+                                srtVert["VertexProperties"][5]["ValueOffsets"] = [offset, offset + 2, offset + 4]
+                                if properties[-1] != "END":
+                                    properties += ["VERTEX_PROPERTY_LEAF_CARD_CORNER"] * 3
+                                    components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
+                                    offsets += [offset, offset + 2, offset + 4]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
+                                    if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
+                                        attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes += [attrib_name2, attrib_name2, attrib_name2]
+                                offset += 6
                             # Leaf Card Lod Scalar
-                            if leaf_card_lod_scalars and geom_types[0] == 3:
+                            if leaf_card_lod_scalars and wm.BFacingLeavesPresent:
                                 srtVert["VertexProperties"][6]["ValueCount"] =  1
                                 srtVert["VertexProperties"][6]["FloatValues"] =  [leaf_card_lod_scalars[i]]
                                 srtVert["VertexProperties"][6]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -451,13 +574,19 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     components += ["VERTEX_COMPONENT_X"]
                                     offsets += [offset]
                                     formats += ["VERTEX_FORMAT_HALF_FLOAT"]
-                                    if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                        attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
-                                    attributes += [attrib_name2]
+                                    if wm.BLeavesPresent: #Exception for Grass
+                                        if attrib_name3 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name3]
+                                    else:
+                                        if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name2]
                                 offset += 2
                             # Wind Extra Data
-                            if wind_extra1 and wind_extra2 and wind_extra3 and geom_types[0] != 0:
+                            if wind_extra1 and wind_extra2 and wind_extra3 and not wm.BBranchesPresent:
                                 srtVert["VertexProperties"][9]["ValueCount"] =  3
                                 srtVert["VertexProperties"][9]["FloatValues"] =  [wind_extra1[i], wind_extra2[i], wind_extra3[i]]
                                 srtVert["VertexProperties"][9]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -466,14 +595,20 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_WIND_EXTRA_DATA"] * 3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset +2, offset + 4]
-                                    if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                        attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
                                     formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
-                                    attributes += [attrib_name2]*3
+                                    if wm.BLeavesPresent and wm.BFacingLeavesPresent: #Exception for Grass
+                                        if attrib_name3 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name3]*3
+                                    else:
+                                        if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name2]*3
                                 offset += 6
                             # Branch Seam Diffuse
-                            if branches_seam_diff and seam_blending and geom_types[0] == 0:
+                            if branches_seam_diff and seam_blending and wm.BBranchesPresent:
                                 srtVert["VertexProperties"][13]["ValueCount"] =  3
                                 srtVert["VertexProperties"][13]["FloatValues"] =  [branches_seam_diff[i][0], branches_seam_diff[i][1], seam_blending[i]]
                                 srtVert["VertexProperties"][13]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -482,10 +617,10 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE"] * 3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset +2, offset + 4]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
                                         attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
                                         num_attrib += 1
-                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
                                     attributes += [attrib_name2]*3
                                 offset += 6
                             # Wind Branch Data
@@ -499,12 +634,17 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z", "VERTEX_COMPONENT_W"]
                                     offsets += [offset, offset +2, offset + 4, offset + 6]
                                     formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 4
-                                    attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                    attributes += [attrib_name3]*4
-                                    num_attrib += 1
+                                    if wm.BLeavesPresent and wm.BFacingLeavesPresent: #Exception for Grass
+                                        attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name4]*4
+                                        num_attrib += 1
+                                    else:
+                                        attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name3]*4
+                                        num_attrib += 1
                                 offset += 8
-                            # Leaf Anchor Point
-                            if leaf_anchor_points and geom_types[0] == 2:
+                            ### Leaf Anchor Point FOR GRASS ### No example of non-grass leaves in W3 ###
+                            if leaf_anchor_points and wm.BLeavesPresent and wm.BFacingLeavesPresent:
                                 srtVert["VertexProperties"][11]["ValueCount"] =  3
                                 srtVert["VertexProperties"][11]["FloatValues"] =  leaf_anchor_points[i]
                                 srtVert["VertexProperties"][11]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -514,12 +654,12 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset +2, offset + 4]
                                     formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 3
-                                    attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                    attributes += [attrib_name4]*3
+                                    attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                    attributes += [attrib_name5]*3
                                     num_attrib += 1
                                 offset += 6
                             # Branch Seam Detail
-                            if branches_seam_det and seam_blending and geom_types[0] == 0:
+                            if branches_seam_det and seam_blending and wm.BBranchesPresent:
                                 srtVert["VertexProperties"][14]["ValueCount"] =  2
                                 srtVert["VertexProperties"][14]["FloatValues"] =  branches_seam_det[i]
                                 srtVert["VertexProperties"][14]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -534,7 +674,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     num_attrib += 1
                                 offset += 4
                             # Detail UV
-                            if uvs_det and geom_types[0] == 0:
+                            if uvs_det and wm.BBranchesPresent:
                                 srtVert["VertexProperties"][15]["ValueCount"] =  2
                                 srtVert["VertexProperties"][15]["FloatValues"] =  uvs_det[i]
                                 srtVert["VertexProperties"][15]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -543,14 +683,14 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_DETAIL_TEXCOORDS"] * 2
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y"]
                                     offsets += [offset, offset +2]
+                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 2
                                     if attrib_name4 == "VERTEX_ATTRIB_UNASSIGNED":
                                         attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
                                         num_attrib += 1
-                                    formats += ["VERTEX_FORMAT_HALF_FLOAT"] * 2
                                     attributes += [attrib_name4]*2
                                 offset += 4
                             # Wind Flags
-                            if wind_flags and geom_types[0] in [2,3]:
+                            if wind_flags and ((wm.BFacingLeavesPresent and not wm.BLeavesPresent) or (not wm.BFacingLeavesPresent and wm.BLeavesPresent)):
                                 srtVert["VertexProperties"][10]["ValueCount"] =  1
                                 srtVert["VertexProperties"][10]["FloatValues"] =  [wind_flags[i]]
                                 srtVert["VertexProperties"][10]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
@@ -567,7 +707,7 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                 offset += 2
                             # half float padding
                             if len(properties[1:])/4 != int(len(properties[1:])/4) and properties[-1] != "END":
-                                if (len(properties)/4) % 1 == 0.25:
+                                if (len(properties[1:])/4) % 1 == 0.25:
                                     properties += ["VERTEX_PROPERTY_PAD", "VERTEX_PROPERTY_UNASSIGNED","VERTEX_PROPERTY_UNASSIGNED"]
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_UNASSIGNED", "VERTEX_COMPONENT_UNASSIGNED"]
                                     offsets += [offset, 0, 0]
@@ -598,9 +738,14 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset +1, offset +2]
                                     formats += ["VERTEX_FORMAT_BYTE"] * 3
-                                    attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                    attributes += [attrib_name5]*3
-                                    num_attrib += 1
+                                    if wm.BLeavesPresent and wm.BFacingLeavesPresent: #Exception for Grass
+                                        attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name6]*3
+                                        num_attrib += 1
+                                    else:
+                                        attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name5]*3
+                                        num_attrib += 1
                                 offset += 3
                             # Ambient Occlusion
                             if ambients:
@@ -612,11 +757,17 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     properties += ["VERTEX_PROPERTY_AMBIENT_OCCLUSION"]
                                     components += ["VERTEX_COMPONENT_X"]
                                     offsets += [offset]
-                                    if attrib_name5 == "VERTEX_ATTRIB_UNASSIGNED":
-                                        attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
                                     formats += ["VERTEX_FORMAT_BYTE"]
-                                    attributes += [attrib_name5]
+                                    if wm.BLeavesPresent and wm.BFacingLeavesPresent: #Exception for Grass
+                                        if attrib_name6 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name6]
+                                    else:
+                                        if attrib_name5 == "VERTEX_ATTRIB_UNASSIGNED":
+                                            attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                            num_attrib += 1
+                                        attributes += [attrib_name5]
                                 offset += 1
                             # Tangents
                             if tangents:
@@ -629,13 +780,18 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"]
                                     offsets += [offset, offset +1, offset +2]
                                     formats += ["VERTEX_FORMAT_BYTE"] * 3
-                                    attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                    attributes += [attrib_name6]*3
-                                    num_attrib += 1
+                                    if wm.BLeavesPresent and wm.BFacingLeavesPresent: #Exception for Grass
+                                        attrib_name7 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name7]*3
+                                        num_attrib += 1
+                                    else:
+                                        attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
+                                        attributes += [attrib_name6]*3
+                                        num_attrib += 1
                                 offset += 3
                             # byte padding
                             if len(properties[1:])/4 != int(len(properties[1:])/4) and properties[-1] != "END":
-                                if (len(properties)/4) % 1 == 0.25:
+                                if (len(properties[1:])/4) % 1 == 0.25:
                                     properties += ["VERTEX_PROPERTY_PAD", "VERTEX_PROPERTY_UNASSIGNED","VERTEX_PROPERTY_UNASSIGNED"]
                                     components += ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_UNASSIGNED", "VERTEX_COMPONENT_UNASSIGNED"]
                                     offsets += [offset, 0, 0]
@@ -677,101 +833,33 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         srtDraw["NNumIndices"] = len(faces)
                         srtDraw["PIndexData"] = faces
                         srtDraw["PRenderState"]["SVertexDecl"]["UiVertexSize"] = offset_final
-                        if 0 in geom_types:
-                            srtDraw["PRenderState"]["BBranchesPresent"] = True
-                        if 1 in geom_types:
-                            srtDraw["PRenderState"]["BFrondsPresent"] = True
-                        if 2 in geom_types:
-                            srtDraw["PRenderState"]["BLeavesPresent"] = True
-                        if 3 in geom_types:
-                            srtDraw["PRenderState"]["BFacingLeavesPresent"] = True
-                        if 4 in geom_types:
-                            srtDraw["PRenderState"]["BRigidMeshesPresent"] = True
-                        if len(mesh.data.materials) > 0:
-                            mesh_mat = mesh.data.materials[0]
-                            mesh_mat_nodes = mesh_mat.node_tree.nodes
-                            if "Diffuse Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes["Diffuse Texture"].image:
-                                    mesh_diffuse = mesh_mat_nodes["Diffuse Texture"].image.name
-                                    srtDraw["PRenderState"]["ApTextures"][0]["Val"] = mesh_diffuse
-                                    textures_names.append(mesh_diffuse)
-                            if "Normal Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes["Normal Texture"].image:
-                                    mesh_normal = mesh_mat_nodes["Normal Texture"].image.name
-                                    srtDraw["PRenderState"]["ApTextures"][1]["Val"] = mesh_normal
-                                    textures_names.append(mesh_normal)
-                            if "Detail Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes["Detail Texture"].image:
-                                    mesh_detail = mesh_mat_nodes["Detail Texture"].image.name
-                                    srtDraw["PRenderState"]["ApTextures"][2]["Val"] = mesh_detail
-                                    textures_names.append(mesh_detail)
-                            if "Detail Normal Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes["Detail Normal Texture"].image:
-                                    mesh_detail_normal = mesh_mat_nodes["Detail Normal Texture"].image.name
-                                    srtDraw["PRenderState"]["ApTextures"][3]["Val"] = mesh_detail_normal
-                                    textures_names.append(mesh_detail_normal)
-                            if "Specular Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes["Specular Texture"].image:
-                                    mesh_specular = mesh_mat_nodes["Specular Texture"].image.name
-                                    srtDraw["PRenderState"]["ApTextures"][4]["Val"] = mesh_specular
-                                    textures_names.append(mesh_specular)
-                                    mesh_transmission = mesh_mat_nodes["Specular Texture"].image.name 
-                                    srtDraw["PRenderState"]["ApTextures"][5]["Val"] = mesh_transmission
-                                    textures_names.append(mesh_transmission)
-                                    
-                            srtDraw["PRenderState"]["VAmbientColor"]["x"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[0]
-                            srtDraw["PRenderState"]["VAmbientColor"]["y"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[1]
-                            srtDraw["PRenderState"]["VAmbientColor"]["z"] = mesh_mat_nodes["Ambient Color"].outputs['Color'].default_value[2]
-                            srtDraw["PRenderState"]["FAmbientContrastFactor"] = mesh_mat_nodes['Ambient Contrast Factor'].outputs['Value'].default_value
-                            srtDraw["PRenderState"]["VDiffuseColor"]["x"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[0]
-                            srtDraw["PRenderState"]["VDiffuseColor"]["y"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[1]
-                            srtDraw["PRenderState"]["VDiffuseColor"]["z"] = mesh_mat_nodes['Diffuse Color'].outputs['Color'].default_value[2]
-                            srtDraw["PRenderState"]["FDiffuseScalar"] = mesh_mat_nodes['Diffuse Scalar'].outputs['Value'].default_value
-                            srtDraw["PRenderState"]["FShininess"] = mesh_mat_nodes['Shininess'].outputs['Value'].default_value
-                            srtDraw["PRenderState"]["VSpecularColor"]["x"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[0]
-                            srtDraw["PRenderState"]["VSpecularColor"]["y"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[1]
-                            srtDraw["PRenderState"]["VSpecularColor"]["z"] = mesh_mat_nodes['Specular Color'].outputs['Color'].default_value[2]
-                            srtDraw["PRenderState"]["VTransmissionColor"]["x"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[0]
-                            srtDraw["PRenderState"]["VTransmissionColor"]["y"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[1]
-                            srtDraw["PRenderState"]["VTransmissionColor"]["z"] = mesh_mat_nodes['Transmission Color'].outputs['Color'].default_value[2]
-                            srtDraw["PRenderState"]["FTransmissionShadowBrightness"] = mesh_mat_nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
-                            srtDraw["PRenderState"]["FTransmissionViewDependency"] = mesh_mat_nodes['Transmission View Dependency'].outputs['Value'].default_value
-                            if "Branch Seam Diffuse Texture" in mesh_mat_nodes:
-                                srtDraw["PRenderState"]["FBranchSeamWeight"] = mesh_mat_nodes['Branch Seam Weight'].outputs['Value'].default_value
-                            srtDraw["PRenderState"]["FAlphaScalar"] = mesh_mat_nodes['Alpha Scalar'].outputs['Value'].default_value
-                            
-                            if mesh_mat.use_backface_culling == True:
-                                srtDraw["PRenderState"]["EFaceCulling"] = "CULLTYPE_BACK"
-                            if mesh_mat.blend_method == 'OPAQUE':
-                                srtDraw["PRenderState"]["BDiffuseAlphaMaskIsOpaque"] = True
-                            if mesh_mat.shadow_method == 'NONE':
-                                srtDraw["PRenderState"]["BCastsShadows"] = False
-                            if mesh_mat_nodes['Specular'].inputs["Ambient Occlusion"].links:
-                                if mesh_mat_nodes['Specular'].inputs["Ambient Occlusion"].links[0].from_node == mesh_mat_nodes["Ambient Occlusion"]:
-                                    srtDraw["PRenderState"]["BAmbientOcclusion"] = True
-                            if mesh_mat_nodes['Ambient Contrast'].inputs['Fac'].links:
-                                if mesh_mat_nodes['Ambient Contrast'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Ambient Contrast Factor']:
-                                    srtDraw["PRenderState"]["EAmbientContrast"] = "EFFECT_ON"
-                            if "Detail Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links:
-                                    if mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links[0].from_node == mesh_mat_nodes["Detail Texture"] and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links[0].from_node == mesh_mat_nodes["Detail Normal Texture"]:
-                                        srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
-                                    elif mesh_mat_nodes['Mix Detail Diffuse'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Mix Detail Seam'] and mesh_mat_nodes['Mix Detail Normal'].inputs['Fac'].links[0].from_node == mesh_mat_nodes['Mix Detail Normal Seam']:
-                                        srtDraw["PRenderState"]["EDetailLayer"] = "EFFECT_ON"
-                            if mesh_mat_nodes["Mix Specular Color"].inputs['Color2'].links and mesh_mat_nodes['Specular'].inputs['Roughness'].links:
-                                if mesh_mat_nodes["Mix Specular Color"].inputs['Color2'].links[0].from_node == mesh_mat_nodes["Specular Color"] and mesh_mat_nodes['Specular'].inputs['Roughness'].links[0].from_node == mesh_mat_nodes['Invert Shininess']:
-                                    srtDraw["PRenderState"]["ESpecular"] = "EFFECT_ON"
-                            if mesh_mat_nodes["Mix Transmission Alpha"].inputs["Color2"].links and mesh_mat_nodes["Mix Shader Fresnel"].inputs["Fac"].links and mesh_mat_nodes["Mix Shadow Brightness"].inputs["Fac"].links:
-                                if mesh_mat_nodes["Mix Transmission Alpha"].inputs["Color2"].links[0].from_node == mesh_mat_nodes["Mix Transmission Color"] and mesh_mat_nodes["Mix Shader Fresnel"].inputs["Fac"].links[0].from_node == mesh_mat_nodes['Transmission Fresnel'] and mesh_mat_nodes["Mix Shadow Brightness"].inputs["Fac"].links[0].from_node == mesh_mat_nodes['Transmission Shadow Brightness']:
-                                    srtDraw["PRenderState"]["ETransmission"] = "EFFECT_ON"
-                            if "Branch Seam Diffuse Texture" in mesh_mat_nodes:
-                                if mesh_mat_nodes['Branch Seam Weight Mult'].outputs['Value'].links:
-                                    srtDraw["PRenderState"]["EBranchSeamSmoothing"] = "EFFECT_ON"
-                            
-                        if child_coll == main_coll.collection.children[-1]:
-                            srtDraw["PRenderState"]["BFadeToBillboard"] = True
-                        if grass == True:
-                            srtDraw["PRenderState"]["BUsedAsGrass"] = True
+                        
+                        # Write mesh material
+                        for k in srtDraw["PRenderState"]:
+                            if hasattr(wm, k):
+                                srtDraw["PRenderState"][k] = getattr(wm, k)
+                                if k in ["VAmbientColor", "VDiffuseColor", "VSpecularColor", "VTransmissionColor"]:
+                                    srtDraw["PRenderState"][k] = {'x':getattr(wm, k)[0], 'y':getattr(wm, k)[1], 'z':getattr(wm, k)[2]}
+                        if col == lod_colls[-1]:  
+                            if bb_coll: #or horiz_coll:
+                                srtDraw["PRenderState"]["BFadeToBillboard"] = True
+                                
+                        # Write mesh textures
+                        for k in ["diffuseTexture", "normalTexture", "specularTexture", "detailTexture", "detailNormalTexture"]:
+                            tex = getattr(wm, k)
+                            if tex:
+                                textures_names.append(tex.name)
+                                if k == "diffuseTexture":
+                                    srtDraw["PRenderState"]["ApTextures"][0]["Val"] = tex.name
+                                if k == "normalTexture":
+                                    srtDraw["PRenderState"]["ApTextures"][1]["Val"] = tex.name
+                                if k == "detailTexture":
+                                    srtDraw["PRenderState"]["ApTextures"][2]["Val"] = tex.name
+                                if k == "detailNormalTexture":
+                                    srtDraw["PRenderState"]["ApTextures"][3]["Val"] = tex.name
+                                if k == "specularTexture":
+                                    srtDraw["PRenderState"]["ApTextures"][4]["Val"] = tex.name
+                                    srtDraw["PRenderState"]["ApTextures"][5]["Val"] = tex.name
                             
                         # Properties
                         prop_index = 0
@@ -1005,17 +1093,17 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
                         srtMain["Geometry"]["P3dRenderStateDepth"].append(srtDepth)
                         
                         # Write P3dRenderStateShadow
-                        srtShadow = copy.deepcopy(srtDraw["PRenderState"])
-                        srtMain["Geometry"]["P3dRenderStateShadow"].append(srtShadow)
+                        srtMain["Geometry"]["P3dRenderStateShadow"].append(copy.deepcopy(srtDraw["PRenderState"]))
                         for i in range(1, len(srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ApTextures"])):
                             srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ApTextures"][i]["Val"] = ""
                         srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ERenderPass"] = "RENDER_PASS_SHADOW_CAST"
+                        srtMain["Geometry"]["P3dRenderStateShadow"][-1]["BFadeToBillboard"] = False
                             
                     #Join meshes back again  
                     JoinThem(mesh_names)
                     # Get Extent
-                    if re.search("LOD0", child_coll.name):
-                        Extent = np.array(child_coll.objects[0].bound_box)
+                    if col == lod_colls[0]:
+                        Extent = np.array(col.objects[0].bound_box)
                     
                     srtLod["NNumDrawCalls"] = len(mesh_names)
                     meshesNum += len(mesh_names)
@@ -1029,30 +1117,27 @@ def write_srt_json(context, filepath, randomType, terrainNormals, lodDist_Range3
         srtMain["Geometry"]["NNum3dRenderStates"] = meshesNum
         srtMain["Geometry"]["NNumLods"] = lodsNum
         
-        # Write LodProfile
-        srtMain["LodProfile"]["m_f3dRange"] = lodDist_Range3D
-        srtMain["LodProfile"]["m_fHighDetail3dDistance"] = lodDist_HighDetail3D
-        srtMain["LodProfile"]["m_fLowDetail3dDistance"] = lodDist_LowDetail3D
-        srtMain["LodProfile"]["m_fBillboardRange"] = lodDist_RangeBillboard
-        srtMain["LodProfile"]["m_fBillboardStartDistance"] = lodDist_StartBillboard
-        srtMain["LodProfile"]["m_fBillboardFinalDistance"] = lodDist_EndBillboard
-        if lodsNum > 1:
+        # Write LodProfile #LodProfile
+        for k in srtMain["LodProfile"]:
+            if hasattr(wm, k):
+                srtMain["LodProfile"][k] = getattr(wm, k)
+        if lodsNum > 0:
             srtMain["LodProfile"]["m_bLodIsPresent"] = True
             
         # User Strings
-        if randomType != "OFF":
-            srtMain["PUserStrings"].append(randomType)
-        if terrainNormals == True:
-            srtMain["PUserStrings"].append("TerrainNormalsOn")
+        if wm.EBillboardRandomType != 'NoBillboard':
+            srtMain["PUserStrings"].append(wm.EBillboardRandomType)
+        if wm.ETerrainNormals != 'TerrainNormalsOff':
+            srtMain["PUserStrings"].append(wm.ETerrainNormals)
         while len(srtMain["PUserStrings"]) < 5:
             srtMain["PUserStrings"].append("")
             
         # StringTable
         srtMain["StringTable"] = [""]
-        if randomType != "OFF":
-            srtMain["StringTable"].append(randomType)
-        if terrainNormals == True:
-            srtMain["StringTable"].append("TerrainNormalsOn")
+        if wm.EBillboardRandomType != 'NoBillboard':
+            srtMain["StringTable"].append(wm.EBillboardRandomType)
+        if wm.ETerrainNormals != 'TerrainNormalsOff':
+            srtMain["StringTable"].append(wm.ETerrainNormals)
         srtMain["StringTable"].append("../../../../../bin/shaders/speedtree")
         textures_names = np.array(textures_names)
         unique_textures_names = list(np.unique(textures_names))
