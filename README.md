@@ -11,6 +11,7 @@ You can find all the required tools in a SpeedTree side panel of the 3D view.
 The export requires the side panel to be displayed. 
 
 Some general documentation about SpeedTree: https://docs.speedtree.com/doku.php?id=start
+
 And a demo of the various tools present in the side panel of the addon:
 [![SpeedTree Addon Video](https://yt-embed.herokuapp.com/embed?v=9nWWpDncmZg)](https://www.youtube.com/watch?v=9nWWpDncmZg)
 
