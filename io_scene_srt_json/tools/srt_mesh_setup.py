@@ -6,6 +6,7 @@ import numpy as np
 import re
 import random, colorsys
 import os
+import json
 
 def get_parent_collection(collection, parent_colls):  
     for parent_collection in bpy.data.collections:
@@ -66,6 +67,12 @@ def srt_mesh_setup(context, apply_geom_type, geom_type):
             srt_coll['m_fBillboardRange'] = 0
             srt_coll['m_fBillboardStartDistance'] = 80
             srt_coll['m_fBillboardFinalDistance'] = 90
+            
+            # Wind
+            with open(os.path.dirname(__file__) +"/../templates/mainTemplate.json", 'r', encoding='utf-8') as mainfile:
+                srtMain = json.load(mainfile)
+            for k in srtMain['Wind']:
+                srt_coll[k] = srtMain['Wind'][k]
                 
         # Deal with Vertex Groups
         if 'GeomType' not in obj.vertex_groups:

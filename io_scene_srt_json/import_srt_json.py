@@ -54,7 +54,13 @@ def read_srt_json(context, filepath):
     lodProfile = srt["LodProfile"]
     lodProfile.pop("m_bLodIsPresent")
     for k in lodProfile:
-            setattr(wm, k, lodProfile[k])
+        setattr(wm, k, lodProfile[k])
+            
+    # Apply Wind
+    wind = srt["Wind"]
+    for k in wind:
+        main_coll[k] = wind[k]
+        #setattr(main_coll, k, wind[k])
             
     # Apply User Settings
     userSettings2 = {}

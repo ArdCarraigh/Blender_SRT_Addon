@@ -97,6 +97,17 @@ def write_srt_json(context, filepath):
         with open("templates/mainTemplate.json", 'r', encoding='utf-8') as mainfile:
             srtMain = json.load(mainfile)
             
+        #Write Wind
+        for k in srtMain["Wind"]:
+            if k == 'Params':
+                srtMain["Wind"][k] = main_coll[k].to_dict()
+            elif k == 'm_abOptions':
+                srtMain["Wind"][k] = list(map(bool, main_coll[k].to_list()))
+            elif k == 'm_afBranchWindAnchor':
+                srtMain["Wind"][k] = main_coll[k].to_list()
+            else:
+                srtMain["Wind"][k] = main_coll[k]
+            
         # Get and Write Collisions #CollisionObjects
         if collision_coll:
             collisionObjects = collision_coll.objects
