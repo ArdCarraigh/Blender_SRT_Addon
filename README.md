@@ -3,7 +3,7 @@ An addon to mod Witcher 3's vegetation. Developed for Blender 3.3.0, other versi
 
 Import/Export .json files dumpable and readable by wolven kit to make them srt (Real Time SpeedTree Meshes).
 
-- Supports all geometry types except rigid meshes. (Leaves are just partially supported)
+- Supports all geometry types except rigid meshes.
 - Supports SpeedTree LOD system parameters.
 - Supports most of Speedtree shader's parameters.
 
