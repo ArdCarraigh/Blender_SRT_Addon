@@ -19,6 +19,12 @@ You can find all the required tools in a SpeedTree side panel of the 3D view.
 ![addon_preferences](https://imgur.com/WFjB5sP.png)
 - The addon is able to leverage the [DDS Addon](https://github.com/matyalatte/Blender-DDS-Addon/releases). When this dds addon is installed, the .srt importer will automatically use it to open .dds files if needed. Moreover, when installed, it offers the possibility to create billboard textures as .dds directly from the SpeedTree side panel
 
+## Limitations
+
+- The .srt export is specifically designed towards the engines with the shader "SHADER_GEN_MODE_UNIFIED_SHADERS" used by REDEngine (The Witcher 3). Other engines such as Unreal Engine may or may not be able to read the exported file from this addon.
+- A couple specificities of that shader is that rigid meshes and horizontal billboards are not supported. Thus, these are currently not exported by the .srt exporter.
+- The billboard texture generator supports both vertical and horizontal billboards independently, but provides wrong results when trying to generate a texture for both at the same time.
+
 ## Documentation
 
 Some general documentation about SpeedTree can be found [here](https://docs.speedtree.com/doku.php?id=start)
