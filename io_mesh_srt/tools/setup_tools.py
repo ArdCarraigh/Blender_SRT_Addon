@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# tools/srt_mesh_setup.py
+# tools/setup_tools.py
 
 import bpy
 import numpy as np

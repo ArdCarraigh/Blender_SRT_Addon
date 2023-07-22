@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# export_srt_json.py
+
 import bpy
 import json
 import os
