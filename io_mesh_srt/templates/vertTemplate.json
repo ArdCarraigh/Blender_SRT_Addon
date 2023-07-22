@@ -165,7 +165,7 @@
 	  {
 		"PropertyName": "VERTEX_PROPERTY_AMBIENT_OCCLUSION",
 		"PropertyFormat": "VERTEX_FORMAT_UNASSIGNED",
-		"UseFloatValuesForBytes": true,
+		"UseFloatValuesForBytes": false,
 		"ValueCount": 0,
 		"FloatValues": [],
 		"ByteValues": [],
