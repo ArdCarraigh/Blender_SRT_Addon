@@ -88,6 +88,7 @@ def write_srt_json(context, filepath):
             cutout = re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))
             uv_array = np.zeros(12)
             if billboards:
+                number_billboards = len(billboards)
                 for i, billboard in enumerate(billboards):
                     bb = bb_coll.objects[billboard].data
                     if not i:
@@ -95,7 +96,6 @@ def write_srt_json(context, filepath):
                         bb_width = verts[2].co[0] - verts[0].co[0]
                         bb_top = verts[2].co[2]
                         bb_bottom = verts[0].co[2]
-                        number_billboards = len(billboards)
                         mat = bb.materials[0]
                         
                     billboard_uv_x = []
@@ -234,8 +234,7 @@ def write_srt_json(context, filepath):
                         # Compute Normals and Tangents
                         mesh_data.uv_layers.active = mesh_data.uv_layers["DiffuseUV"]
                         mesh_data.calc_normals_split()
-                        if mesh_data.uv_layers:
-                            mesh_data.calc_tangents()
+                        mesh_data.calc_tangents()
                             
                         if not mat["BRigidMeshesPresent"] or (mat["BFacingLeavesPresent"] and mat["BRigidMeshesPresent"]): #Dont export pure rigid meshes because not supported by RedEngine
                             meshes.append(mesh)
@@ -263,7 +262,7 @@ def write_srt_json(context, filepath):
                             # Leaf Card Corner
                             leaf_card_corners = np.zeros(n_verts_3)
                             mesh_data.attributes["leafCardCorner"].data.foreach_get("vector", leaf_card_corners)
-                            leaf_card_corners = leaf_card_corners.reshape(-1,3)[:,[0,2,1]].tolist()
+                            leaf_card_corners = leaf_card_corners.reshape(-1,3)[:,[1,2,0]].tolist()
                             
                             # Leaf Card LOD Scalar
                             leaf_card_lod_scalars = np.zeros(n_verts)
@@ -767,14 +766,13 @@ def write_srt_json(context, filepath):
             else:
                 srtMain["Wind"][k] = main_coll[k]
             
-        # User Strings and StringTable
+        # UserStrings and StringTable
+        strings = main_coll["PUserStrings"]
+        if not strings:
+            strings = []
+        srtMain["PUserStrings"] = strings
         srtMain["StringTable"] = [""]
-        if main_coll["EBillboardRandomType"] != 'NoBillboard':
-            srtMain["PUserStrings"].append(main_coll["EBillboardRandomType"])
-            srtMain["StringTable"].append(main_coll["EBillboardRandomType"])
-        if main_coll["ETerrainNormals"] != 'TerrainNormalsOff':
-            srtMain["StringTable"].append(main_coll["ETerrainNormals"])
-            srtMain["PUserStrings"].append(main_coll["ETerrainNormals"])
+        srtMain["StringTable"].extend(strings)
         srtMain["StringTable"].append("../../../../../bin/shaders/speedtree")
         srtMain["StringTable"].extend(list(np.unique(np.array(textures_names))))
         srtMain["StringTable"].extend(list(np.unique(np.array(bb_textures_names))))

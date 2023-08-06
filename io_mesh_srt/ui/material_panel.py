@@ -922,10 +922,12 @@ PROPS_Material_Panel = [
         items=(
             ('WIND_LOD_NONE', "WIND_LOD_NONE", "No idea"),
             ('WIND_LOD_NONE_X_BRANCH', "WIND_LOD_NONE_X_BRANCH", "No idea"),
+            ('WIND_LOD_BRANCH', "WIND_LOD_BRANCH", "No idea"),
+            ('WIND_LOD_BRANCH_X_FULL', 'WIND_LOD_BRANCH_X_FULL', "No idea"),
+            ('WIND_LOD_FULL', 'WIND_LOD_FULL', "No idea"),
             ('WIND_LOD_GLOBAL', "WIND_LOD_GLOBAL", "No idea"),
             ('WIND_LOD_GLOBAL_X_BRANCH', 'WIND_LOD_GLOBAL_X_BRANCH', "No idea"),
-            ('WIND_LOD_BRANCH_X_FULL', 'WIND_LOD_BRANCH_X_FULL', "No idea"),
-            ('WIND_LOD_FULL', 'WIND_LOD_FULL', "No idea"))
+            ('WIND_LOD_GLOBAL_X_FULL', 'WIND_LOD_GLOBAL_X_FULL', "No idea"))
     )),
 ("BBranchesPresent", BoolProperty(
         name="Branches Present",

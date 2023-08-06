@@ -40,9 +40,8 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
             
     #Custom Properties for General User Settings
     if srt_coll:
-        # User Settings
-        srt_coll['EBillboardRandomType'] = 'NoBillboard'
-        srt_coll['ETerrainNormals'] = 'TerrainNormalsOff'
+        # User Strings
+        srt_coll['PUserStrings'] = []
         # Shader Settings
         srt_coll['ELightingModel'] = 'LIGHTING_MODEL_DEFERRED'
         srt_coll['ELodMethod'] = 'LOD_METHOD_SMOOTH'
@@ -206,7 +205,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'leafCardCorner' not in mesh.attributes:
         attrib = mesh.attributes.new(name='leafCardCorner', type='FLOAT_VECTOR', domain='POINT')
         if vertex_data and vertex_data["VERTEX_PROPERTY_LEAF_CARD_CORNER"]:
-            leaf_card_corners = np.array(vertex_data["VERTEX_PROPERTY_LEAF_CARD_CORNER"])[:,[0,2,1]].flatten()
+            leaf_card_corners = np.array(vertex_data["VERTEX_PROPERTY_LEAF_CARD_CORNER"])[:,[2,0,1]].flatten()
             attrib.data.foreach_set('vector', leaf_card_corners)
         
     if 'leafCardLodScalar' not in mesh.attributes:

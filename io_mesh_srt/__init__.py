@@ -36,7 +36,7 @@ class SRTAddonPreferences(bpy.types.AddonPreferences):
     wolvenkit_cli: StringProperty(
         name="WolvenKit CLI exe",
         subtype='DIR_PATH',
-        default="E:/Witcher3Modding/WolvenKit_SRT/net481/WolvenKit.CLI.exe",
+        default="E:/Witcher3Modding/WolvenKit_7.2/WolvenKit.CLI.exe",
         description="Path to the WolvenKit Command-Line Interface .exe"
     )
     

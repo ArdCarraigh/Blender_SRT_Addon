@@ -44,7 +44,7 @@ def generate_srt_billboards(context, number_billboards, bb_width, bb_bottom, bb_
             bb.from_pydata(verts, [],faces)
             obj = object_data_add(context, bb)
             bb.shade_smooth()
-            obj.rotation_euler[2] = radians(angle_diff * i)
+            obj.rotation_euler[2] = radians(90 + angle_diff * i)
             
             #SpeedTree Tag
             bb["SpeedTreeTag"] = 2
@@ -105,7 +105,7 @@ def generate_srt_horizontal_billboard(context, height = 0.5, size = 1, verts = N
     else:
         bb.materials.append(new_mat)
         
-def generate_srt_billboard_texture(context, resolution, margin, file_format = 'PNG', dds_dxgi = None, apply_texture = True, use_custom_path = False, custom_path = None):
+def generate_srt_billboard_texture(context, resolution, margin, dilation, file_format = 'PNG', dds_dxgi = None, apply_texture = True, use_custom_path = False, custom_path = None):
     main_coll = GetCollection()
     if main_coll:
         bb_coll = None
@@ -176,6 +176,7 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                 # Prepare Compositing
                 bpy.context.view_layer.use_pass_diffuse_color = True
                 bpy.context.view_layer.use_pass_normal = True
+                bpy.context.view_layer.use_pass_shadow = True
                 active_scene = bpy.context.scene
                 active_scene.view_settings.view_transform = 'Standard'
                 active_scene.render.film_transparent = True
@@ -205,6 +206,10 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                     file_output.base_path = path
                 file_output.location = (5000, 0)
                 links.new(mask.outputs['Mask'], key.inputs['Image'])
+                
+                # Add Sun
+                bpy.ops.object.light_add(type='SUN')
+                sun = bpy.context.active_object
                 
                 # UV Unwrap
                 if bb_objects:
@@ -298,25 +303,19 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                     view_layer = bpy.context.view_layer
                     view_layer.name = "ViewLayer" + str(i+1)
                     view_layers.append(view_layer)
-                        
-                    # Camera Distance
-                    dist = np.max(billboard_dimensions)
-                    #distance = dist * 0.5 / 0.36
-                    distance = dist * 1.25
                     
                     # Place Cameras
                     if i == number_billboards - 1 and horiz_objects:
-                        distance += origin_z
-                        loc.length = distance
+                        loc.length = billboard_dimensions[0] * 0.6 + origin_z
                         bpy.ops.object.camera_add(location = loc, rotation = [0, 0, 0])
                     else:
-                        loc.length = distance
+                        loc.length = billboard_dimensions[0] * 0.6
                         loc[2] = loc_z
                         bpy.ops.object.camera_add(location = loc, rotation = [np.pi*0.5, 0, rotation])
                     cam = bpy.context.active_object
                     cameras.append(cam)
                     cam.data.type = 'ORTHO'
-                    cam.data.ortho_scale = dist
+                    cam.data.ortho_scale = np.max(billboard_dimensions)
                     scene.camera = cam
                     
                     # Make a New Collection for Each Billboard (Necessary for Facing Leaves...)
@@ -336,11 +335,46 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                     
                     # Make the compositing
                     y_coord = 400 - 400 * i
+                    mix_shadows = nodes.new('CompositorNodeMixRGB')
+                    mix_shadows.blend_type = 'MULTIPLY'
+                    mix_shadows.inputs['Fac'].default_value = 0.75
+                    erode_shadows = nodes.new('CompositorNodeDilateErode')
+                    erode_shadows.mode = 'DISTANCE'
+                    erode_shadows.distance = -5
+                    erode_shadows2 = nodes.new('CompositorNodeDilateErode')
+                    erode_shadows2.mode = 'FEATHER'
+                    erode_shadows2.distance = -10
+                    shadows_aa = nodes.new('CompositorNodeAntiAliasing')
+                    shadows_aa.threshold = 0
+                    reroute_alpha = nodes.new('NodeReroute')
                     color_ramp = nodes.new('CompositorNodeValToRGB')
-                    #color_ramp.color_ramp.elements[0].position = 0.495
-                    #color_ramp.color_ramp.elements[1].position = 0.505
+                    color_ramp.color_ramp.elements[0].position = 0.49999995
+                    color_ramp.color_ramp.elements[1].position = 0.49999996
                     color_ramp.location = (500, y_coord)
+                    #Dilation
+                    erode_alpha = nodes.new('CompositorNodeDilateErode')
+                    erode_alpha.mode = 'DISTANCE'
+                    erode_alpha.distance = -1
+                    subtract = nodes.new('CompositorNodeMath')
+                    subtract.operation = 'SUBTRACT'
+                    set_alpha_outline = nodes.new('CompositorNodeSetAlpha')
+                    separate_outline = nodes.new('CompositorNodeSeparateColor')
+                    dilate_red = nodes.new('CompositorNodeDilateErode')
+                    dilate_red.mode = 'DISTANCE'
+                    dilate_red.distance = dilation
+                    dilate_green = nodes.new('CompositorNodeDilateErode')
+                    dilate_green.mode = 'DISTANCE'
+                    dilate_green.distance = dilation
+                    dilate_blue = nodes.new('CompositorNodeDilateErode')
+                    dilate_blue.mode = 'DISTANCE'
+                    dilate_blue.distance = dilation
+                    combine_dilated = nodes.new('CompositorNodeCombineColor')
+                    set_alpha_pre = nodes.new('CompositorNodeSetAlpha')
+                    set_alpha_pre.mode = 'REPLACE_ALPHA'
+                    alpha_over_pre = nodes.new('CompositorNodeAlphaOver')
+                    #Transform
                     set_alpha = nodes.new('CompositorNodeSetAlpha')
+                    set_alpha.mode = 'REPLACE_ALPHA'
                     set_alpha.location = (800, y_coord)
                     transform = nodes.new('CompositorNodeTransform')
                     transform.inputs['X'].default_value = (((uv_x_max + uv_x_min) * 0.5) - 0.5) * resolution
@@ -349,6 +383,29 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                     transform.location = (1200, y_coord)
                     alpha_over = nodes.new('CompositorNodeAlphaOver')
                     alpha_over.location = (1500 + 200 * i, y_coord)
+                    #Links
+                    links.new(reroute_alpha.outputs['Output'], color_ramp.inputs['Fac'])
+                    links.new(reroute_alpha.outputs['Output'], set_alpha_pre.inputs['Alpha'])
+                    links.new(erode_shadows.outputs['Mask'], erode_shadows2.inputs['Mask'])
+                    links.new(erode_shadows2.outputs['Mask'], shadows_aa.inputs['Image'])
+                    links.new(shadows_aa.outputs['Image'], mix_shadows.inputs[2])
+                    links.new(mix_shadows.outputs['Image'], set_alpha_pre.inputs['Image'])
+                    links.new(mix_shadows.outputs['Image'], set_alpha_outline.inputs['Image'])
+                    links.new(color_ramp.outputs['Image'], erode_alpha.inputs['Mask'])
+                    links.new(erode_alpha.outputs['Mask'], subtract.inputs[1])
+                    links.new(color_ramp.outputs['Image'], subtract.inputs[0])
+                    links.new(subtract.outputs['Value'], set_alpha_outline.inputs['Alpha'])
+                    links.new(set_alpha_outline.outputs['Image'], separate_outline.inputs['Image'])
+                    links.new(separate_outline.outputs['Red'], dilate_red.inputs['Mask'])
+                    links.new(separate_outline.outputs['Green'], dilate_green.inputs['Mask'])
+                    links.new(separate_outline.outputs['Blue'], dilate_blue.inputs['Mask'])
+                    links.new(separate_outline.outputs['Alpha'], combine_dilated.inputs['Alpha'])
+                    links.new(dilate_red.outputs['Mask'], combine_dilated.inputs['Red'])
+                    links.new(dilate_green.outputs['Mask'], combine_dilated.inputs['Green'])
+                    links.new(dilate_blue.outputs['Mask'], combine_dilated.inputs['Blue'])
+                    links.new(combine_dilated.outputs['Image'], alpha_over_pre.inputs[1])
+                    links.new(set_alpha_pre.outputs['Image'], alpha_over_pre.inputs[2])
+                    links.new(alpha_over_pre.outputs['Image'], set_alpha.inputs['Image'])
                     links.new(color_ramp.outputs['Image'], set_alpha.inputs['Alpha'])
                     links.new(set_alpha.outputs['Image'], transform.inputs['Image'])
                     links.new(transform.outputs['Image'], alpha_over.inputs[2])
@@ -362,16 +419,18 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                         nodes['Render Layers'].scene = scene
                         nodes['Render Layers'].layer = view_layer.name
                         links.new(key.outputs['Image'], alpha_over.inputs[1])
-                        links.new(nodes['Render Layers'].outputs['DiffCol'], set_alpha.inputs['Image'])
-                        links.new(nodes['Render Layers'].outputs['Alpha'], color_ramp.inputs['Fac'])
+                        links.new(nodes['Render Layers'].outputs['DiffCol'], mix_shadows.inputs[1])
+                        links.new(nodes['Render Layers'].outputs['Alpha'], reroute_alpha.inputs['Input'])
+                        links.new(nodes['Render Layers'].outputs['Shadow'], erode_shadows.inputs['Mask'])
                     else:
                         render_node = nodes.new('CompositorNodeRLayers')
                         render_node.location = (10, y_coord)
                         render_node.scene = scene
                         render_node.layer = view_layer.name
                         links.new(alpha_over_previous.outputs['Image'], alpha_over.inputs[1])
-                        links.new(render_node.outputs['DiffCol'], set_alpha.inputs['Image'])
-                        links.new(render_node.outputs['Alpha'], color_ramp.inputs['Fac'])
+                        links.new(render_node.outputs['DiffCol'], mix_shadows.inputs[1])
+                        links.new(render_node.outputs['Alpha'], reroute_alpha.inputs['Input'])
+                        links.new(render_node.outputs['Shadow'], erode_shadows.inputs['Mask'])
                     # Rotation
                     if render_rotation:
                         links.new(set_alpha.outputs['Image'], flip.inputs['Image'])
@@ -519,6 +578,7 @@ def generate_srt_billboard_texture(context, resolution, margin, file_format = 'P
                         billboard_mat_nodes["Branch Seam Normal Texture"].image = bpy.data.images.load(new_path_normal, check_existing = True)
                 
                 # Clean up
+                bpy.data.objects.remove(sun)
                 for node in nodes:
                     if node != nodes["Composite"] and node != nodes['Render Layers']:
                         nodes.remove(node)

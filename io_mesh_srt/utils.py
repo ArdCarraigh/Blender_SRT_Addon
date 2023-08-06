@@ -5,6 +5,8 @@ import bpy
 import numpy as np
 import re
 import os
+import json
+from math import isnan, isinf
 from copy import deepcopy
 
 def JoinThem(objects):
@@ -185,6 +187,10 @@ def getAttributesComponents(attributes):
 
 def getVertexProperty(srtVert, prop_id, data, count, format, property_name, start_offset, add_offsets, prop_count):
     new_offsets = (np.array(start_offset).repeat(count) + add_offsets).tolist()
+    # Deal with constants
+    for i in range(len(data)):
+        if isnan(data[i]) or isinf(data[i]):
+            data[i] = json.dumps(data[i])
     srtVert["VertexProperties"][prop_id]["ValueCount"] =  count
     srtVert["VertexProperties"][prop_id]["FloatValues"] =  data
     srtVert["VertexProperties"][prop_id]["PropertyFormat"] = format

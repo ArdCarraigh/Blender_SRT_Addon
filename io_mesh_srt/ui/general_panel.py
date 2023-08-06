@@ -3,8 +3,105 @@
 
 import bpy
 import re
-from bpy.props import BoolProperty, EnumProperty
+from bpy.props import BoolProperty, EnumProperty, StringProperty, IntProperty, CollectionProperty
 from io_mesh_srt.utils import GetCollection
+
+class UserStringsListActions(bpy.types.Operator):
+    """Move user strings up and down, add and remove"""
+    bl_idname = "speed_tree.user_strings_list_action"
+    bl_label = "List Actions"
+    bl_description = "Move items up and down, add and remove"
+    bl_options = {'REGISTER'}
+
+    action: EnumProperty(
+        options={'HIDDEN'},
+        items=(
+            ('UP', "Up", ""),
+            ('DOWN', "Down", ""),
+            ('REMOVE', "Remove", ""),
+            ('ADD', "Add", "")))
+            
+    user_string: EnumProperty(
+        options={'HIDDEN'},
+        default='BillboardRandomBranch',
+        items=(
+            ('BillboardRandomBranch', "BillboardRandomBranch", ""),
+            ('BillboardRandomGrass', "BillboardRandomGrass", ""),
+            ('BillboardRandomOff', "BillboardRandomOff", ""),
+            ('BillboardRandomTrees', "BillboardRandomTrees", ""),
+            ('EnvMaterialSettingsOff', "EnvMaterialSettingsOff", ""),
+            ('InteractiveOn', "InteractiveOn", ""),
+            ('PigmentFloodOff', "PigmentFloodOff", ""),
+            ('RandomOff', "RandomOff", ""),
+            ('TerrainNormalsOn', "TerrainNormalsOn", ""),
+            ('Custom', "Custom String", "")))
+            
+    text: StringProperty(name = "Enter String", default = "")
+
+    def execute(self, context):
+        main_coll = GetCollection(make_active=False)
+        wm = context.window_manager
+        idx = wm.PUserStringsIndex
+        strings = main_coll["PUserStrings"]
+        if not strings:
+            strings = []
+
+        try:
+            item = strings[idx]
+        except IndexError:
+            pass
+        else:
+            if self.action == 'DOWN' and idx < len(strings) - 1:
+                item_next = strings[idx+1]
+                strings[idx] = item_next
+                strings[idx+1] = item
+                wm.PUserStringsIndex += 1
+
+            elif self.action == 'UP' and idx >= 1:
+                item_prev = strings[idx-1]
+                strings[idx] = item_prev
+                strings[idx-1] = item
+                wm.PUserStringsIndex -= 1
+
+            elif self.action == 'REMOVE':
+                if idx == len(strings) - 1:
+                    wm.PUserStringsIndex -= 1
+                strings.pop(idx)
+
+        if self.action == 'ADD':
+            if self.user_string != 'Custom':
+                t = self.user_string
+            else:
+                t = self.text
+            strings.append(t)
+            wm.PUserStringsIndex = len(strings)-1
+            
+        main_coll["PUserStrings"] = strings
+        self.user_string = 'BillboardRandomBranch'
+            
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        if self.user_string != 'Custom':
+            return self.execute(context)
+        else:
+            return bpy.context.window_manager.invoke_props_dialog(self)
+
+def updatePUserString(self, context):
+    wm = context.window_manager
+    main_coll = GetCollection(make_active=False) 
+    if main_coll:
+        strings = main_coll["PUserStrings"]
+        strings[self.index] = self.name
+        main_coll["PUserStrings"] = strings
+
+class SPEEDTREE_PROP_UserStrings(bpy.types.PropertyGroup):
+    name: StringProperty()
+    index: IntProperty()
+
+class SPEEDTREE_UL_UserStrings(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        layout.prop(item, "name", text="", emboss=False, icon="NONE")
         
 class SpeedTreeGeneralSettings(bpy.types.Panel):
     bl_idname = 'VIEW3D_PT_SpeedTree_settings_panel'
@@ -41,19 +138,31 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
                 row = layout.row()
                 box = row.box()
                 box_row = box.row()
-                box_row.label(text="User Settings")
+                box_row.label(text="User Strings")
                 box_row = box.row()
-                box_row.prop(wm, "EBillboardRandomType", text = '')
-                if wm.EBillboardRandomType != main_coll["EBillboardRandomType"]:
-                    wm.EBillboardRandomType = main_coll["EBillboardRandomType"]
-                if not bb_coll and not horiz_coll:
-                    wm.EBillboardRandomType = 'NoBillboard'
-                box_row.enabled = not not bb_coll or not not horiz_coll
-                
-                box_row = box.row()
-                box_row.prop(wm, 'ETerrainNormals', text = '')
-                if wm.ETerrainNormals != main_coll["ETerrainNormals"]:
-                    wm.ETerrainNormals = main_coll["ETerrainNormals"]
+                box_row.template_list("SPEEDTREE_UL_UserStrings", "", wm, "PUserStrings", wm, "PUserStringsIndex", rows=4)
+                check = False
+                length_wm_strings = len(wm.PUserStrings)
+                length_coll_strings = len(main_coll["PUserStrings"])
+                if length_wm_strings == length_coll_strings:
+                    for i, string in enumerate(wm.PUserStrings):
+                        if string.name != main_coll["PUserStrings"][i]:
+                            check = True
+                            break
+                if length_wm_strings != length_coll_strings or check:
+                    for i in reversed(range(length_wm_strings)):
+                        wm.PUserStrings.remove(i)
+                    for i, string in enumerate(main_coll["PUserStrings"]):
+                        wm.PUserStrings.add()
+                        wm.PUserStrings[-1].name = string
+                        wm.PUserStrings[-1].index = i
+                        
+                col = box_row.column(align=True)
+                col.operator_menu_enum(UserStringsListActions.bl_idname, property = "user_string", icon='ADD', text="").action = 'ADD'
+                col.operator(UserStringsListActions.bl_idname, icon='REMOVE', text="").action = 'REMOVE'
+                col.separator()
+                col.operator(UserStringsListActions.bl_idname, icon='TRIA_UP', text="").action = 'UP'
+                col.operator(UserStringsListActions.bl_idname, icon='TRIA_DOWN', text="").action = 'DOWN'
                 
                 row = layout.row()
                 box = row.box()
@@ -83,16 +192,6 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
                 box_row.enabled = not bb_coll and not horiz_coll and nLod == 1 and nMat == 1
                 
         return
-
-def updateEBillboardRandomType(self, context):
-    main_coll = GetCollection(make_active=False)
-    if main_coll:
-        main_coll["EBillboardRandomType"] = self.EBillboardRandomType
-        
-def updateETerrainNormals(self, context):
-    main_coll = GetCollection(make_active=False) 
-    if main_coll:
-        main_coll["ETerrainNormals"] = self.ETerrainNormals
         
 def updateELightingModel(self, context):
     main_coll = GetCollection(make_active=False) 
@@ -115,27 +214,12 @@ def updateBUsedAsGrass(self, context):
         main_coll["BUsedAsGrass"] = self.BUsedAsGrass
      
 PROPS_General_Panel = [
-('EBillboardRandomType', EnumProperty(
-        name="Billboard Randomisation",
-        description="Set the billboard randomisation method",
-        update = updateEBillboardRandomType,
-        items=(
-            ('BillboardRandomOff', "BillboardRandomOff", "Disable billboard randomisation"),
-            ('BillboardRandomTrees', "BillboardRandomTrees", "Randomise tree billboards??"),
-            ('BillboardRandomBranch', "BillboardRandomBranch", "Randomise branch billboards??"),
-            ('NoBillboard', "NoBillboard", "NoBillboard") 
-        ),
-        default='NoBillboard'
+("PUserStringsIndex", IntProperty(
+        name = "Index of the active user string",
+        default = 0
     )),
-('ETerrainNormals', EnumProperty(
-        name="Terrain Normals",
-        description="Enable terrain normals",
-        update = updateETerrainNormals,
-        items=(
-            ('TerrainNormalsOn', "TerrainNormalsOn", "Enable terrain normals"),
-            ('TerrainNormalsOff', "TerrainNormalsOff", "Disable terrain normals")
-        ),
-        default='TerrainNormalsOff'
+("PUserStrings", CollectionProperty(
+        type = SPEEDTREE_PROP_UserStrings
     )),
 ("ELightingModel", EnumProperty(
         name="Lighting Model",
@@ -166,8 +250,8 @@ PROPS_General_Panel = [
 ("BUsedAsGrass", BoolProperty(
         name="Used as Grass",
         update = updateBUsedAsGrass,
-        description="Set the mesh as grass. Require no billboard, a single LOD and a single material"
+        description="Set the mesh as grass. Requires no billboard, a single LOD and a single material"
     ))
 ]
 
-CLASSES_General_Panel = [SpeedTreeGeneralSettings]
+CLASSES_General_Panel = [UserStringsListActions, SPEEDTREE_PROP_UserStrings, SPEEDTREE_UL_UserStrings, SpeedTreeGeneralSettings]

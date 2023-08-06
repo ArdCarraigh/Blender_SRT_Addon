@@ -27,7 +27,7 @@ class SRTBillboardTextureGeneration(Operator):
         dds_dxgi = None
         if wm.EBillboardTextureFormat == 'DDS':
             dds_dxgi = wm.EDxgiFormat
-        generate_srt_billboard_texture(context, wm.IBillboardTextureResolution, wm.IBillboardTextureMargin, wm.EBillboardTextureFormat, dds_dxgi, wm.BApplyBillboardTexture, wm.BUseCustomOutputBillboardTexture, wm.SOutputBillboardTexture)
+        generate_srt_billboard_texture(context, wm.IBillboardTextureResolution, wm.IBillboardTextureMargin, wm.IBillboardTextureDilation, wm.EBillboardTextureFormat, dds_dxgi, wm.BApplyBillboardTexture, wm.BUseCustomOutputBillboardTexture, wm.SOutputBillboardTexture)
         return {'FINISHED'}
     
 class SpeedTreeBillboardsPanel(bpy.types.Panel):
@@ -146,7 +146,8 @@ class SpeedTreeBillboardsPanel(bpy.types.Panel):
                     box_row = box.row()
                     box_row.prop(wm, "IBillboardTextureMargin", text = "Margin")
                     box_row = box.row()
-                    box_row.alignment = 'RIGHT'
+                    box_row.prop(wm, "IBillboardTextureDilation", text = "Dilation")
+                    box_row = box.row()
                     box_row.prop(wm, "EBillboardTextureFormat", text="File Format")
                     if wm.EBillboardTextureFormat == 'DDS':
                         box_row = box.row()
@@ -374,6 +375,14 @@ PROPS_Billboard_Panel = [
         name = "UV Islands Margin",
         description = "Set the space between UV islands",
         default = 4,
+        min = 0,
+        subtype="PIXEL"
+    )),
+("IBillboardTextureDilation", IntProperty(
+        name = "Texture Dilation",
+        description = "Set the number of steps (in pixels) each billboard texture should be dilated by",
+        default = 4,
+        min = 0,
         subtype="PIXEL"
     )),
 ("EBillboardTextureFormat", EnumProperty(

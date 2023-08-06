@@ -23,7 +23,7 @@ def read_srt_json(context, filepath):
             subprocess.run(command)
             filepath += ".json"
         else:
-            log.critical('Wolvenkit CLI .exe not found.')
+            print('Wolvenkit CLI .exe not found.')
             return
     
     dds_addon = False 
@@ -58,18 +58,9 @@ def read_srt_json(context, filepath):
     for k in wind:
         main_coll[k] = wind[k]
             
-    # Apply User Settings
-    userSettings2 = {}
-    userSettings2['EBillboardRandomType'] = 'NoBillboard'
-    userSettings2['ETerrainNormals'] = 'TerrainNormalsOff'
-    userSettings = srt["PUserStrings"]
-    for k in userSettings:
-        if k in ["BillboardRandomTrees", "BillboardRandomBranch", "BillboardRandomOff"]:
-            userSettings2['EBillboardRandomType'] = k
-        if k == 'TerrainNormalsOn':
-            userSettings2['ETerrainNormals'] = 'TerrainNormalsOn'
-    for k in userSettings2:
-            setattr(wm, k, userSettings2[k])
+    # User Strings
+    userStrings = srt["PUserStrings"]
+    main_coll['PUserStrings'] = [item for item in userStrings if item]
     
     # Collision Object #
     if "CollisionObjects" in srt:
@@ -198,11 +189,11 @@ def read_srt_json(context, filepath):
             properties = [props["PropertyName"] for props in vert_data[0]]
             float_data_array = np.array([[prop["FloatValues"] for prop in vert] for vert in vert_data], dtype=object).T
             byte_data_array = np.array([[prop["ByteValues"] for prop in vert] for vert in vert_data], dtype=object).T
-            all_vert_data = [float_data_array[x].tolist() if float_data_array[x][0] else [] for x in range(len(float_data_array))]
+            all_vert_data = [np.array(float_data_array[x].tolist()).astype(float).tolist() if float_data_array[x][0] else [] for x in range(len(float_data_array))]
             all_vert_data = dict(zip(properties, all_vert_data))
             if all_vert_data["VERTEX_PROPERTY_AMBIENT_OCCLUSION"]: #Deal with Ambient Occlusion Special Case
                 if byte_data_array.size and byte_data_array[18].size:
-                    all_vert_data["VERTEX_PROPERTY_AMBIENT_OCCLUSION"] = byte_data_array[18].tolist()
+                    all_vert_data["VERTEX_PROPERTY_AMBIENT_OCCLUSION"] = np.array(byte_data_array[18].tolist()).astype(float).tolist()
                 else:
                     all_vert_data["VERTEX_PROPERTY_AMBIENT_OCCLUSION"] = (np.array(all_vert_data["VERTEX_PROPERTY_AMBIENT_OCCLUSION"]) * 255).tolist()
 
