@@ -21,9 +21,11 @@ You can find all the required tools in a SpeedTree side panel of the 3D view.
 
 ## Limitations
 
+- The addon doesn't support wind.
 - The .srt export is specifically designed towards the engines with the shader "SHADER_GEN_MODE_UNIFIED_SHADERS" used by REDEngine (The Witcher 3). Other engines such as Unreal Engine may or may not be able to read the exported file from this addon.
 - A couple specificities of that shader is that rigid meshes and horizontal billboards are not supported. Thus, these are currently not exported by the .srt exporter.
 - The billboard texture generator supports both vertical and horizontal billboards independently, but provides wrong results when trying to generate a texture for both at the same time.
+- Colors are expected to differ from the original in-game asset as the shader I built in Blender is not a 1:1 reproduction.
 
 ## Documentation
 

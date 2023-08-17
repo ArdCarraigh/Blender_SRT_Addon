@@ -103,7 +103,7 @@ def read_srt_json(context, filepath):
             bb_uvs_data_1_3 = bb_uvs_data[1]+bb_uvs_data[3]
             bb_uvs = np.array([[bb_uvs_data[0], bb_uvs_data[1]], [bb_uvs_data_0_2, bb_uvs_data[1]], [bb_uvs_data_0_2, bb_uvs_data_1_3], [bb_uvs_data[0], bb_uvs_data_1_3]])
             if bb_rotations[i]:
-                bb_uvs = np.array([bb_uvs[j-1] for j in range(4)])
+                bb_uvs = bb_uvs[[0,3,2,1]]
             bb_uvs = bb_uvs[[0,1,2,2,3,0]].flatten()
             bb_uvs[1::2] = 1 - bb_uvs[1::2]
             uvs_all.append(bb_uvs)
@@ -158,7 +158,7 @@ def read_srt_json(context, filepath):
             verts_cutout = [[-bb_width*0.5 + bb_width * cutout[j], 0, bb_bottom + (bb_top-bb_bottom) * cutout[j+1]] for j in range(0, ncutout*2, 2)]
             bb = bpy.data.meshes.new(name="Mesh_cutout")
             bb.from_pydata(verts_cutout, [], cutout_faces)
-            object_data_add(context, bb)
+            obj = object_data_add(context, bb)
             bb.shade_smooth()
             bb.materials.append(mat)
             wm.BCutout = True

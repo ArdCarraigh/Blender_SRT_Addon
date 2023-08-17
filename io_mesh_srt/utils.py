@@ -243,17 +243,6 @@ def getSphere(obj, compute_radius = True):
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
     return Pos, Radius
 
-def isBillboardRotated(uv_array):
-    billboard_uv_x = uv_array[::2]
-    billboard_uv_y = uv_array[1::2]
-    check = False
-    index = np.argmin(billboard_uv_x + billboard_uv_y)
-    if index == 0 or index == 5:
-        check = False
-    elif index == 2 or index == 3:
-        check = True
-    return check, billboard_uv_x, billboard_uv_y
-
 def checkWeightPaint(obj, geom_type = 0, wind_flag = 0):
     weight_layers = ["GeomType", "WindWeight1", "WindWeight2", "WindNormal1", "WindNormal2", "WindExtra1", "WindExtra2", "WindExtra3", "WindFlag", "AmbientOcclusion", "SeamBlending"]
     existing_layers = []

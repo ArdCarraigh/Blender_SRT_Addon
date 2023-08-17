@@ -191,12 +191,9 @@ def updateVerticalBillboards(self, context):
                 
                 angle_diff = 360/n_bb 
                 for i, name in enumerate(bb_objects):
-                    bb_coll.objects[name].rotation_euler[2] = radians(angle_diff * i)
-                
+                    bb_coll.objects[name].rotation_euler[2] = radians(90 + angle_diff * i)
+                    
             else:
-                if bb_coll.objects:
-                    for obj in bb_coll.objects:
-                        bpy.data.objects.remove(obj, do_unlink = True)
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
         
 def updateFWidth(self, context):
@@ -275,9 +272,6 @@ def updateBHorizontalBillboard(self, context):
                     generate_srt_horizontal_billboard(context, self.FHeight, self.FSize)
         else:
             if bb_coll:
-                if bb_coll.objects:
-                    for obj in bb_coll.objects:
-                        bpy.data.objects.remove(obj, do_unlink = True)
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
                 
 def updateFHeight(self, context):

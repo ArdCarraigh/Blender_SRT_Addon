@@ -7,7 +7,7 @@ import os
 import re
 import numpy as np
 from copy import deepcopy
-from io_mesh_srt.utils import GetLoopDataPerVertex, GetCollection, JoinThem, getAttributesComponents, getVertexProperty, selectOnly, setAttribute, getSphere, isBillboardRotated, TriangulateActiveMesh, SplitMesh, getMaterial, checkWeightPaint, updateVertexProperties
+from io_mesh_srt.utils import GetLoopDataPerVertex, GetCollection, JoinThem, getAttributesComponents, getVertexProperty, selectOnly, setAttribute, getSphere, TriangulateActiveMesh, SplitMesh, getMaterial, checkWeightPaint, updateVertexProperties
 
 def write_srt_json(context, filepath):
     wm = bpy.context.window_manager
@@ -98,23 +98,19 @@ def write_srt_json(context, filepath):
                         bb_bottom = verts[0].co[2]
                         mat = bb.materials[0]
                         
-                    billboard_uv_x = []
-                    billboard_uv_y = []
                     bb.attributes["DiffuseUV"].data.foreach_get("vector", uv_array)
-                    check, billboard_uv_x, billboard_uv_y = isBillboardRotated(uv_array)
-                    billboard_uv_y = 1 - billboard_uv_y
-                    if check:
+                    billboard_uv_x = uv_array[::2]
+                    billboard_uv_y = uv_array[1::2]
+                    index = np.argmin(billboard_uv_x + billboard_uv_y)
+                    if index == 4:
                         billboard_rotated.append(1)
-                        billboard_uvs.append(billboard_uv_x[0])
-                        billboard_uvs.append(billboard_uv_y[2])
-                        billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
-                        billboard_uvs.append((billboard_uv_y[0]) - (billboard_uv_y[2]))
                     else:
                         billboard_rotated.append(0)
-                        billboard_uvs.append(billboard_uv_x[0])
-                        billboard_uvs.append(billboard_uv_y[0])
-                        billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
-                        billboard_uvs.append((billboard_uv_y[2]) - (billboard_uv_y[0]))
+                    billboard_uv_y = 1 - billboard_uv_y
+                    billboard_uvs.append(billboard_uv_x[0])
+                    billboard_uvs.append(billboard_uv_y[0])
+                    billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
+                    billboard_uvs.append((billboard_uv_y[2]) - (billboard_uv_y[0]))
             
             if cutout:            
                 cut_obj = bb_coll.objects[cutout[0]]
