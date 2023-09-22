@@ -14,22 +14,24 @@ You can find all the required tools in a SpeedTree side panel of the 3D view.
 
 ## Recommendations
 
-- In order to obtain a .json dump from a .srt, you must install [Wolvenkit 7](https://github.com/WolvenKit/WolvenKit-7/releases)
-- For the addon to automatically read and write .srt files, you must add the path to WolvenKit's CLI.exe in the addon preferences
+- In order to obtain a .json dump from a .srt, you must install [Wolvenkit 7](https://github.com/WolvenKit/WolvenKit-7/releases),
+- For the addon to automatically read and write .srt files, you must add the path to WolvenKit's CLI.exe in the addon preferences,
 ![addon_preferences](https://imgur.com/WFjB5sP.png)
-- The addon is able to leverage the [DDS Addon](https://github.com/matyalatte/Blender-DDS-Addon/releases). When this dds addon is installed, the .srt importer will automatically use it to open .dds files if needed. Moreover, when installed, it offers the possibility to create billboard textures as .dds directly from the SpeedTree side panel
+- The addon is able to leverage the [DDS Addon](https://github.com/matyalatte/Blender-DDS-Addon/releases). When this dds addon is installed, the .srt importer will automatically use it to open .dds files if needed. Moreover, when installed, it offers the possibility to create billboard textures as .dds directly from the SpeedTree side panel.
 
 ## Limitations
 
-- The addon doesn't support wind.
-- The .srt export is specifically designed towards the engines with the shader "SHADER_GEN_MODE_UNIFIED_SHADERS" used by REDEngine (The Witcher 3). Other engines such as Unreal Engine may or may not be able to read the exported file from this addon.
-- A couple specificities of that shader is that rigid meshes and horizontal billboards are not supported. Thus, these are currently not exported by the .srt exporter.
+- The addon doesn't support wind,
+- The addon is meant for SpeedTree v7 assets. Earlier .srt versions may not work properly and later speedtree versions don't support .srt format at all,
+- The .srt export is specifically designed towards the engines with the shader "SHADER_GEN_MODE_UNIFIED_SHADERS" used by REDEngine (The Witcher 3). Other engines such as Unreal Engine may or may not be able to read the exported file from this addon,
+- A couple specificities of that game shader is that rigid meshes and horizontal billboards are not supported. Thus, these are currently not exported by the .srt exporter,
+- The blender shader only works with EEVEE renderer and it looks best with a hand-crafted lighting rather than a hdri,
+- Colors are expected to differ from in-game visuals as the shader I built in Blender is not a 1:1 reproduction,
 - The billboard texture generator supports both vertical and horizontal billboards independently, but provides wrong results when trying to generate a texture for both at the same time.
-- Colors are expected to differ from the original in-game asset as the shader I built in Blender is not a 1:1 reproduction.
 
 ## Documentation
 
-Some general documentation about SpeedTree can be found [here](https://docs.speedtree.com/doku.php?id=start)
+Some general documentation about SpeedTree can be found [here](https://docs.speedtree.com/doku.php?id=start).
 
 Video demonstration of the various tools present in the side panel of the addon (old version):
 [![SpeedTree Addon Video](https://i.ytimg.com/vi/9nWWpDncmZg/maxresdefault.jpg)](https://www.youtube.com/watch?v=9nWWpDncmZg)

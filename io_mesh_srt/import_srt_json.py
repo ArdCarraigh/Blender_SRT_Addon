@@ -148,6 +148,7 @@ def read_srt_json(context, filepath):
                 bbMat.pop(param)
         for k in ["VAmbientColor", "VDiffuseColor", "VSpecularColor", "VTransmissionColor"]:
             bbMat[k] = (*list(bbMat[k].values()), 1)
+        bbMat["FShininess"] /= 128
             
         for k in bbMat:
             setattr(wm, k, bbMat[k])
@@ -266,6 +267,7 @@ def read_srt_json(context, filepath):
                 srtMat.pop(param)
             for k in ["VAmbientColor", "VDiffuseColor", "VSpecularColor", "VTransmissionColor"]:
                 srtMat[k] = (*list(srtMat[k].values()), 1)
+            srtMat["FShininess"] /= 128
                 
             for k in srtMat:
                 setattr(wm, k, srtMat[k])

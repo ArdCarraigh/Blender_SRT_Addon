@@ -288,21 +288,21 @@ def getMaterial(main_coll, mat, srtMat):
     
     srtMat["FAmbientContrastFactor"] = nodes['Ambient Contrast Factor'].outputs['Value'].default_value
     srtMat["FDiffuseScalar"] = nodes['Diffuse Scalar'].outputs['Value'].default_value
-    srtMat["FShininess"] = nodes['Shininess'].outputs['Value'].default_value
+    srtMat["FShininess"] = nodes['Shininess'].outputs['Value'].default_value * 128
     srtMat["FTransmissionShadowBrightness"] = nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
     srtMat["FTransmissionViewDependency"] = nodes['Transmission View Dependency'].outputs['Value'].default_value
     srtMat["FBranchSeamWeight"] = nodes['Branch Seam Weight'].outputs['Value'].default_value
     srtMat["FAlphaScalar"] = nodes['Alpha Scalar'].outputs['Value'].default_value
     
-    if not nodes['Ambient Occlusion'].inputs["Color"].links:
-        srtMat["BAmbientOcclusion"] = False
-    else:
+    if nodes["Ambient Occlusion Mix"].inputs[7].links:
         srtMat["BAmbientOcclusion"] = True
-        
-    if mat.blend_method == 'OPAQUE':
-        srtMat["BDiffuseAlphaMaskIsOpaque"] = True
     else:
+        srtMat["BAmbientOcclusion"] = False
+        
+    if nodes['Alpha Scalar Mix'].inputs[6].links:
         srtMat["BDiffuseAlphaMaskIsOpaque"] = False
+    else:
+        srtMat["BDiffuseAlphaMaskIsOpaque"] = True
     
     if mat.shadow_method != 'NONE':
         srtMat["BCastsShadows"] = True

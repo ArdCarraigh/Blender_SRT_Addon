@@ -103,10 +103,10 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                             wm.diffuseTexture = nodes["Diffuse Texture"].image
                             
                         box.prop(wm, "BDiffuseAlphaMaskIsOpaque", text = "Alpha Mask Opaque")
-                        if mat.blend_method == 'OPAQUE':
-                            wm.BDiffuseAlphaMaskIsOpaque = True
-                        else:
+                        if nodes['Mix Diffuse Alpha Seam Blending'].outputs['Color'].links:
                             wm.BDiffuseAlphaMaskIsOpaque = False
+                        else:
+                            wm.BDiffuseAlphaMaskIsOpaque = True
                                        
                         #Normal
                         row = layout.row()
@@ -206,20 +206,21 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         #Ambient Color
                         row = layout.row()
                         box = row.box()
-                        box.label(text='Ambient Contrast')
-                        box.prop(wm, "EAmbientContrast", text = "")
-                        if wm.EAmbientContrast != mat["EAmbientContrast"]:
-                            wm.EAmbientContrast = mat["EAmbientContrast"]
-                        if not nodes['Ambient Contrast'].inputs["Fac"].links:
-                            wm.EAmbientContrast = 'EFFECT_OFF'
-                        
                         box_row = box.row()
                         box_row.label(text="Ambient Color")
-                        box_row.enabled = wm.EAmbientContrast in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
                         box_row.prop(wm, "VAmbientColor", text = '')
                         if wm.VAmbientColor != nodes["Ambient Color"].outputs["Color"].default_value:
                             wm.VAmbientColor = nodes["Ambient Color"].outputs["Color"].default_value
-                            
+                        
+                        box_row = box.row()
+                        box_row.label(text = "Ambient Contrast")
+                        box_row = box.row()
+                        box_row.prop(wm, "EAmbientContrast", text = "")
+                        if wm.EAmbientContrast != mat["EAmbientContrast"]:
+                            wm.EAmbientContrast = mat["EAmbientContrast"]
+                        if not nodes['Ambient Color Final'].inputs[7].links or not nodes["Mix Shadow Contrast"].inputs[7].links:
+                            wm.EAmbientContrast = 'EFFECT_OFF'
+                        
                         box_row = box.row()
                         box_row.enabled = wm.EAmbientContrast in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
                         box_row.prop(wm, "FAmbientContrastFactor", text = 'Ambient Contrast Factor')
@@ -233,7 +234,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         box.prop(wm, "ESpecular", text = "")
                         if wm.ESpecular != mat["ESpecular"]:
                             wm.ESpecular = mat["ESpecular"]
-                        if not nodes['Specular BSDF'].inputs['Roughness'].links or not nodes["Mix Specular Color"].inputs['Color2'].links:
+                        if not nodes['Specular BSDF'].inputs['Roughness'].links or not nodes['Specular BSDF'].inputs['Specular'].links:
                             wm.ESpecular = 'EFFECT_OFF'
                             
                         box_row = box.row()
@@ -256,7 +257,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         box.prop(wm, "ETransmission", text = "")
                         if wm.ETransmission != mat["ETransmission"]:
                             wm.ETransmission = mat["ETransmission"]
-                        if not nodes["Mix Transmission Color"].inputs["Color2"].links or not nodes["Mix Shader Fresnel"].inputs["Fac"].links or not nodes["Mix Shadow Brightness"].inputs["Fac"].links:
+                        if  not nodes["Mix Transmission Color"].inputs["Factor"].links or not nodes["Invert Transmission Mask"].inputs["Color"].links or not nodes["Mix Transmission Final"].inputs[0].links:
                             wm.ETransmission = 'EFFECT_OFF'
                             
                         box_row = box.row()
@@ -287,8 +288,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                             wm.FAlphaScalar = nodes["Alpha Scalar"].outputs["Value"].default_value
                         
                         box_row = box.row()
-                        box_row.label(text="Culling Type")  
-                        box.prop(wm, "EFaceCulling", text = "")
+                        box_row.prop(wm, "EFaceCulling", text = "")
                         if wm.EFaceCulling != mat["EFaceCulling"]:
                             wm.EFaceCulling = mat["EFaceCulling"]
                         if mat.use_backface_culling:
@@ -323,10 +323,10 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
                         box = row.box()
                         box.label(text="Supported")
                         box.prop(wm, "BAmbientOcclusion", text = "Ambient Occlusion")
-                        if not nodes['Ambient Occlusion'].inputs["Color"].links:
-                            wm.BAmbientOcclusion = False
-                        else:
+                        if nodes["Ambient Occlusion Mix"].inputs[7].links:
                             wm.BAmbientOcclusion = True
+                        else:
+                            wm.BAmbientOcclusion = False
                             
                         box.prop(wm, "BCastsShadows", text = "Cast Shadow")
                         if mat.shadow_method != 'NONE':
@@ -445,11 +445,15 @@ def updateEAmbientContrast(self, context):
         tree = mat.node_tree
         links = tree.links
         nodes = tree.nodes
-        input1 = nodes['Ambient Contrast'].inputs["Fac"]
+        input1 = nodes['Ambient Color Final'].inputs[7]
+        input2 = nodes["Mix Shadow Contrast"].inputs[7]
         while input1.links:
             links.remove(input1.links[0])
+        while input2.links:
+            links.remove(input2.links[0])
         if self.EAmbientContrast in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
-            links.new(nodes['Ambient Contrast Factor'].outputs["Value"], input1)
+            links.new(nodes['Ambient Contrast'].outputs['Color'], input1)
+            links.new(nodes['Ambient Contrast'].outputs['Color'], input2)
                 
 def updateFAmbientContrastFactor(self, context):
     ob = bpy.context.active_object
@@ -463,7 +467,7 @@ def updateBAmbientOcclusion(self, context):
         tree = mat.node_tree
         links = tree.links
         nodes = tree.nodes
-        input1 = nodes["Ambient Occlusion"].inputs["Color"]
+        input1 = nodes["Ambient Occlusion Mix"].inputs[7]
         while input1.links:
             links.remove(input1.links[0])
         if self.BAmbientOcclusion:
@@ -482,10 +486,15 @@ def updateFDiffuseScalar(self, context):
 def updateBDiffuseAlphaMaskIsOpaque(self, context):
     ob = bpy.context.active_object
     if "SpeedTreeTag" in ob.data:
-        if self.BDiffuseAlphaMaskIsOpaque:
-            ob.active_material.blend_method = 'OPAQUE'
-        else:
-            ob.active_material.blend_method = 'CLIP'
+        mat = ob.active_material
+        tree = mat.node_tree
+        links = tree.links
+        nodes = tree.nodes
+        input1 = nodes['Alpha Scalar Mix'].inputs[6]
+        while input1.links:
+            links.remove(input1.links[0])
+        if not self.BDiffuseAlphaMaskIsOpaque:
+            links.new(nodes["Mix Diffuse Alpha Seam Blending"].outputs["Color"], input1)
                 
 def updateEDetailLayer(self, context):
     ob = bpy.context.active_object
@@ -497,8 +506,9 @@ def updateEDetailLayer(self, context):
         nodes = tree.nodes
         input1 = nodes['Mix Detail Diffuse'].inputs["Fac"]
         input2 = nodes['Mix Detail Normal'].inputs["Fac"]
-        while input1.links or input2.links:
+        while input1.links:
             links.remove(input1.links[0])
+        while input2.links:
             links.remove(input2.links[0])
         if self.EDetailLayer in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
             links.new(nodes["Mix Detail Alpha Seam Blending"].outputs["Color"], input1)
@@ -513,13 +523,14 @@ def updateESpecular(self, context):
         links = tree.links
         nodes = tree.nodes
         input1 = nodes['Specular BSDF'].inputs['Roughness']
-        input2 = nodes["Mix Specular Color"].inputs['Color2']
-        while input1.links or input2.links:
+        input2 = nodes['Specular BSDF'].inputs['Specular']
+        while input1.links:
             links.remove(input1.links[0])
+        while input2.links:
             links.remove(input2.links[0])
         if self.ESpecular in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
-            links.new(nodes["Invert Shininess"].outputs["Color"], input1)
-            links.new(nodes['Specular Color'].outputs["Color"], input2)
+            links.new(nodes["Mix Shininess"].outputs[2], input1)
+            links.new(nodes['Mix Specular'].outputs[2], input2)
                 
 def updateFShininess(self, context):
     ob = bpy.context.active_object
@@ -539,17 +550,19 @@ def updateETransmission(self, context):
         tree = mat.node_tree
         links = tree.links
         nodes = tree.nodes
-        input1 = nodes["Mix Transmission Color"].inputs["Color2"]
-        input2 = nodes["Mix Shader Fresnel"].inputs["Fac"]
-        input3 = nodes["Mix Shadow Brightness"].inputs["Fac"]
-        while input1.links or input2.links or input3.links:
+        input1 = nodes["Mix Transmission Color"].inputs["Factor"]
+        input2 = nodes["Invert Transmission Mask"].inputs["Color"]
+        input3 = nodes["Mix Transmission Final"].inputs[0]
+        while input1.links:
             links.remove(input1.links[0])
+        while input2.links:
             links.remove(input2.links[0])
+        while input3.links:
             links.remove(input3.links[0])
         if self.ETransmission in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
-            links.new(nodes["Transmission Color Brightness"].outputs["Color"], input1)
-            links.new(nodes['Transmission Fresnel'].outputs["Fac"], input2)
-            links.new(nodes['Transmission Shadow Brightness'].outputs["Value"], input3)
+            links.new(nodes["Mix Specular Alpha Seam Blending"].outputs["Color"], input1)
+            links.new(nodes["Mix Transmission Mask"].outputs[2], input2)
+            links.new(nodes["Mix Transmission Pre Final"].outputs[2], input3)
                 
 def updateVTransmissionColor(self, context):
     ob = bpy.context.active_object
@@ -736,7 +749,9 @@ PROPS_Material_Panel = [
         name="Ambient Contrast Factor",
         update = updateFAmbientContrastFactor,
         description="Set the ambient contrast factor !!! NOT SUPPORTED IN BLENDER !!!",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 1
     )),
 ("BAmbientOcclusion", BoolProperty(
         name="Ambient Occlusion",
@@ -757,7 +772,9 @@ PROPS_Material_Panel = [
         name="Diffuse Scalar",
         update = updateFDiffuseScalar,
         description="Set the diffuse scalar",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 100
     )),
 ("BDiffuseAlphaMaskIsOpaque", BoolProperty(
         name="Diffuse Alpha Mask Opaque",
@@ -786,7 +803,9 @@ PROPS_Material_Panel = [
         name="Shininess",
         update = updateFShininess,
         description="Set the shininess",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 1
     )),
 ("VSpecularColor", FloatVectorProperty(
         name="Specular Color",
@@ -821,7 +840,9 @@ PROPS_Material_Panel = [
         name="Transmission Shadow Brightness",
         update = updateFTransmissionShadowBrightness,
         description="Allow for the brightening of shadows where transmission occurs",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 1
     )),
 ("FTransmissionViewDependency", FloatProperty(
         name="Transmission View Dependency",
@@ -844,7 +865,9 @@ PROPS_Material_Panel = [
         name="Branch Seam Weight",
         update = updateFBranchSeamWeight,
         description="Adjust how “dense” the blend area is in the blend computation",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 99.9999
     )),
 ("EFaceCulling", EnumProperty(
         name="Face Culling",
@@ -913,7 +936,9 @@ PROPS_Material_Panel = [
         name="Alpha Scalar",
         update = updateFAlphaScalar,
         description="Set the alpha scalar",
-        precision = 4
+        precision = 4,
+        min = 0,
+        max = 100
     )),
 ("EWindLod", EnumProperty(
         name="Wind Lod",

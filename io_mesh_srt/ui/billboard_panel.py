@@ -9,9 +9,7 @@ from bpy.types import Operator
 from bpy.props import BoolProperty, FloatProperty, IntProperty, EnumProperty, StringProperty
 from io_mesh_srt.utils import GetCollection, selectOnly
 from io_mesh_srt.tools.billboard_tools import generate_srt_billboards, generate_srt_horizontal_billboard, generate_srt_billboard_texture
-if 'blender_dds_addon' in bpy.context.preferences.addons:
-    from blender_dds_addon.ui.custom_properties import DDS_FMT_ITEMS
-
+    
 class SRTBillboardTextureGeneration(Operator):
     """Generate a Billboard Texture"""
     bl_idname = "speed_tree.srt_billboard_texture_generation"
@@ -408,9 +406,14 @@ PROPS_Billboard_Panel = [
     )),
 ("EDxgiFormat", EnumProperty(
         name='DXGI format',
-        items=DDS_FMT_ITEMS if 'blender_dds_addon' in bpy.context.preferences.addons else None,
         description="DXGI format for DDS",
-        default='BC3_UNORM'
+        default='BC3_UNORM',
+        items= (
+        ('BC1_UNORM', "BC1_UNORM", "BC1_UNORM"),
+        ('BC3_UNORM', "BC3_UNORM", "BC3_UNORM"),
+        ('BC5_UNORM', "BC5_UNORM", "BC5_UNORM"),
+        ('BC7_UNORM', "BC7_UNORM", "BC7_UNORM")
+        )
     ))
 ]
 
