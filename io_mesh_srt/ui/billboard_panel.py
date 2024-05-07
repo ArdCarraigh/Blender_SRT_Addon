@@ -17,7 +17,7 @@ class SRTBillboardTextureGeneration(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
@@ -38,7 +38,7 @@ class SpeedTreeBillboardsPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
 
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'billboard':
             
             layout = self.layout
@@ -163,7 +163,7 @@ class SpeedTreeBillboardsPanel(bpy.types.Panel):
         return
 
 def updateVerticalBillboards(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_objects = None
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll: 
@@ -195,7 +195,7 @@ def updateVerticalBillboards(self, context):
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
         
 def updateFWidth(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             right = self.FWidth * 0.5
@@ -211,7 +211,7 @@ def updateFWidth(self, context):
                 attrib_data[0].vector = attrib_data[0].vector #Update the mesh
         
 def updateFTopPos(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             pos_array = np.zeros(12)
@@ -224,7 +224,7 @@ def updateFTopPos(self, context):
                 attrib_data[0].vector = attrib_data[0].vector #Update the mesh
             
 def updateFBottomPos(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             pos_array = np.zeros(12)
@@ -259,7 +259,7 @@ def updateBCutout(self, context):
                 ngroup.links.new(ngroup.nodes["Group Input"].outputs['Geometry'], ngroup.nodes["Group Output"].inputs['Geometry'])
             
 def updateBHorizontalBillboard(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
                     
         if self.BHorizontalBillboard:
@@ -273,7 +273,7 @@ def updateBHorizontalBillboard(self, context):
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
                 
 def updateFHeight(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
         if bb_coll and bb_coll.objects:
             pos_array = np.zeros(12)
@@ -285,7 +285,7 @@ def updateFHeight(self, context):
             attrib_data[0].vector = attrib_data[0].vector #Update the mesh
             
 def updateFSize(self, context):
-    if context.window_manager.BUpdateBillboards:
+    if context.window_manager.speedtree.BUpdateBillboards:
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
         right = self.FSize * 0.5
         left = -right

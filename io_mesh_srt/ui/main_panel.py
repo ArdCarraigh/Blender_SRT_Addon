@@ -5,6 +5,7 @@ import bpy
 from bpy.props import EnumProperty
 from bpy.types import Operator
 from io_mesh_srt.tools.setup_tools import srt_mesh_setup
+from io_mesh_srt.utils import GetCollection
     
 class SRTMeshSetup(Operator):
     """Set Up a SRT Asset"""
@@ -41,20 +42,23 @@ class SpeedTreeMainPanel(bpy.types.Panel):
     bl_label = 'SpeedTree'
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         layout = self.layout
         layout.operator(SRTMeshSetup.bl_idname, text = "Set Up a SRT Asset", icon = "WORLD")
         layout.separator()
-        row = layout.row(align = True)
-        row.alignment = "CENTER"
-        row.scale_x = 1.44
-        row.scale_y = 1.4
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'general', text = "")
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'lod', text = "")
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'vertex', text = "")
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'collision', text = "")
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'billboard', text = "")
-        row.prop_enum(wm, "SpeedTreeSubPanel", 'material', text = "")
+        
+        main_coll = GetCollection(make_active=False)
+        if main_coll:
+            row = layout.row(align = True)
+            row.alignment = "CENTER"
+            row.scale_x = 1.44
+            row.scale_y = 1.4
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'general', text = "")
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'lod', text = "")
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'vertex', text = "")
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'collision', text = "")
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'billboard', text = "")
+            row.prop_enum(wm, "SpeedTreeSubPanel", 'material', text = "")
         
         return 
             

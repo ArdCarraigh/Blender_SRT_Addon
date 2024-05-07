@@ -40,7 +40,7 @@ class UserStringsListActions(bpy.types.Operator):
 
     def execute(self, context):
         main_coll = GetCollection(make_active=False)
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         idx = wm.PUserStringsIndex
         strings = main_coll["PUserStrings"]
         if not strings:
@@ -88,7 +88,7 @@ class UserStringsListActions(bpy.types.Operator):
             return bpy.context.window_manager.invoke_props_dialog(self)
 
 def updatePUserString(self, context):
-    wm = context.window_manager
+    wm = context.window_manager.speedtree
     main_coll = GetCollection(make_active=False) 
     if main_coll:
         strings = main_coll["PUserStrings"]
@@ -113,7 +113,7 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'general':
             
             layout = self.layout
@@ -226,26 +226,26 @@ PROPS_General_Panel = [
         update = updateELightingModel,
         description="Set the lighting model to use with the selected material !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('LIGHTING_MODEL_DEFERRED', 'LIGHTING_MODEL_DEFERRED', "Set the lighting model deferred"),
-            ('LIGHTING_MODEL_PER_VERTEX', "LIGHTING_MODEL_PER_VERTEX", "Set the lighting model per vertex"),
-            ('LIGHTING_MODEL_PER_PIXEL', "LIGHTING_MODEL_PER_PIXEL", "Set the lighting model per pixel"))
+            ('DEFERRED', 'DEFERRED', "Set the lighting model deferred"),
+            ('PER_VERTEX', "PER_VERTEX", "Set the lighting model per vertex"),
+            ('PER_PIXEL', "PER_PIXEL", "Set the lighting model per pixel"))
     )),
 ("ELodMethod", EnumProperty(
         name="Lod Method",
         update = updateELodMethod,
         description="Set the lod transition method of the selected material !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('LOD_METHOD_SMOOTH', "LOD_METHOD_SMOOTH", "Enable smooth lod transition"),
-            ('LOD_METHOD_POP', "LOD_METHOD_POP", "Enable immediate lod transition"))
+            ('SMOOTH', "SMOOTH", "Enable smooth lod transition"),
+            ('POP', "POP", "Enable immediate lod transition"))
     )),
 ("EShaderGenerationMode", EnumProperty(
         name="Shader Generation Mode",
         update = updateEShaderGenerationMode,
         description="Set the shader generation mode",
         items=(
-            ('SHADER_GEN_MODE_UNIFIED_SHADERS', "SHADER_GEN_MODE_UNIFIED_SHADERS", "Set the shader generation mode to REDengine"),
-            ('SHADER_GEN_MODE_STANDARD', "SHADER_GEN_MODE_STANDARD", "Set the shader generation mode to Standard"),
-            ('SHADER_GEN_MODE_UNREAL_ENGINE_4', "SHADER_GEN_MODE_UNREAL_ENGINE_4", "Set the shader generation mode to Unreal Engine 4 !!! NOT SUPPORTED IN BLENDER !!!"))
+            ('UNIFIED_SHADERS', "UNIFIED_SHADERS", "Set the shader generation mode to REDengine"),
+            ('STANDARD', "STANDARD", "Set the shader generation mode to Standard"),
+            ('UNREAL4', "UNREAL4", "Set the shader generation mode to Unreal Engine 4 !!! NOT SUPPORTED IN BLENDER !!!"))
     )),
 ("BUsedAsGrass", BoolProperty(
         name="Used as Grass",

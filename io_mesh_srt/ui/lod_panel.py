@@ -16,7 +16,7 @@ class SpeedTreeLODPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'lod':
             
             layout = self.layout
@@ -25,10 +25,10 @@ class SpeedTreeLODPanel(bpy.types.Panel):
                 row = layout.row()
                 box = row.box()
                 box.label(text = 'LOD Profile')
-                box_row = box.row()
-                box_row.prop(wm, "m_f3dRange", text = "3D Range")
-                if wm.m_f3dRange != main_coll['m_f3dRange']:
-                    wm.m_f3dRange = main_coll['m_f3dRange']
+                #box_row = box.row()
+                #box_row.prop(wm, "m_f3dRange", text = "3D Range")
+                #if wm.m_f3dRange != main_coll['m_f3dRange']:
+                #    wm.m_f3dRange = main_coll['m_f3dRange']
                 
                 box_row = box.row()    
                 box_row.prop(wm, "m_fHighDetail3dDistance", text = "High Detail 3D Distance")
@@ -40,10 +40,10 @@ class SpeedTreeLODPanel(bpy.types.Panel):
                 if wm.m_fLowDetail3dDistance != main_coll['m_fLowDetail3dDistance']:
                     wm.m_fLowDetail3dDistance = main_coll['m_fLowDetail3dDistance']
                 
-                box_row = box.row()   
-                box_row.prop(wm, "m_fBillboardRange", text = "Billboard Range")
-                if wm.m_fBillboardRange != main_coll['m_fBillboardRange']:
-                    wm.m_fBillboardRange = main_coll['m_fBillboardRange']
+                #box_row = box.row()   
+                #box_row.prop(wm, "m_fBillboardRange", text = "Billboard Range")
+                #if wm.m_fBillboardRange != main_coll['m_fBillboardRange']:
+                #    wm.m_fBillboardRange = main_coll['m_fBillboardRange']
                 
                 box_row = box.row()    
                 box_row.prop(wm, "m_fBillboardStartDistance", text = "Billboard Start Distance")
@@ -55,9 +55,9 @@ class SpeedTreeLODPanel(bpy.types.Panel):
                 if wm.m_fBillboardFinalDistance != main_coll['m_fBillboardFinalDistance']:
                     wm.m_fBillboardFinalDistance = main_coll['m_fBillboardFinalDistance']
                     
-            row = layout.row()
-            box = row.box()
-            box.prop(wm, "previewLod", text = 'Preview LOD')
+                row = layout.row()
+                box = row.box()
+                box.prop(wm, "previewLod", text = 'Preview LOD')
         
         return
     
@@ -121,8 +121,10 @@ def updateLodPreview(self, context):
                         if vector_math.inputs[1].links:
                             geom_nodes.node_group.links.remove(vector_math.inputs[1].links[0])
                             
-    if prev_mode == 'EDIT_MESH':
         bpy.ops.object.mode_set(mode='EDIT', toggle = False)
+                            
+    if prev_mode != 'EDIT_MESH':
+        bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
      
 PROPS_Lod_Panel = [
 ('m_f3dRange', FloatProperty(

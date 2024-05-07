@@ -8,6 +8,7 @@ import numpy as np
 from math import radians
 from mathutils import Vector
 from copy import deepcopy
+from shutil import rmtree
 from bpy_extras.object_utils import object_data_add
 from io_mesh_srt.utils import GetCollection, JoinThem, selectOnly, ImportTemplates, GetLoopDataPerVertex
 
@@ -141,17 +142,16 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 
             if bb_objects or horiz_objects:
                 
-                # Prepare last LOD Collection
+                # Make a Temporary Collection
                 last_lod_col = lods_coll[-1]
-                last_lod_col_name = last_lod_col.name
-                last_lod_col_dot = last_lod_col_name.find(".")
-                if last_lod_col_dot > -1:
-                    last_lod_col_number = int(last_lod_col_name[last_lod_col_dot + 1:])
-                else:
-                    last_lod_col_number = 0
                 JoinThem(last_lod_col.objects)
-                last_lod_mesh = last_lod_col.objects[0]
-                last_lod_modif = last_lod_mesh.modifiers['Leaf_Card']
+                temp_coll = GetCollection("LOD100", True, False)
+                selectOnly(last_lod_col.objects[0])
+                bpy.ops.object.duplicate(linked=False, mode='TRANSLATION')
+                temp_mesh = bpy.context.active_object
+                old_mats = temp_mesh.data.materials
+                temp_coll.objects.link(temp_mesh)
+                last_lod_col.objects.unlink(temp_mesh)
                 
                 # Import Normal MatCap
                 ImportTemplates()
@@ -174,34 +174,68 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 filename = "\\" + main_coll.name + "_Billboard" + ext
                 filename_normal = "\\" + main_coll.name + "_Billboard_n" + ext
                 
-                # Prepare Compositing
-                bpy.context.view_layer.use_pass_diffuse_color = True
-                bpy.context.view_layer.use_pass_normal = True
-                bpy.context.view_layer.use_pass_shadow = True
-                active_scene = bpy.context.scene
-                active_scene.view_settings.view_transform = 'Standard'
-                active_scene.render.film_transparent = True
-                active_scene.render.engine = 'BLENDER_EEVEE'
-                active_scene.use_nodes = True
-                ntree = active_scene.node_tree
+                # Prepare Scene and View Layer
+                temp_scene = bpy.context.scene.copy()
+                bpy.context.window.scene = temp_scene
+                view_layer = bpy.context.view_layer
+                view_layer.use_pass_diffuse_color = True
+                view_layer.use_pass_shadow = True
+                view_layer.use_pass_mist = True
+                temp_scene.view_settings.view_transform = 'Standard'
+                temp_scene.render.film_transparent = True
+                temp_scene.render.engine = 'BLENDER_EEVEE'
+                temp_scene.use_nodes = True
+                ntree = temp_scene.node_tree
                 nodes = ntree.nodes
                 links = ntree.links
-                composite = nodes["Composite"]
-                mask = nodes.new('CompositorNodeMask')
-                mask.size_source = 'FIXED'
-                mask.size_x = resolution
-                mask.size_y = resolution
-                key = nodes.new('CompositorNodeColorMatte')
-                key.inputs['Key Color'].default_value = (0,0,0,0)
-                viewer = nodes.new('CompositorNodeViewer')
+                
+                #Compositing
+                render_node = nodes['Render Layers']
+                render_node.scene = temp_scene
+                render_node.layer = view_layer.name
+                set_alpha = nodes.new('CompositorNodeSetAlpha')
+                set_alpha.mode = 'REPLACE_ALPHA'
+                mix = nodes.new('CompositorNodeMixRGB')
+                mix.blend_type = 'MULTIPLY'
+                mix.inputs['Fac'].default_value = 0.65
+                separate_color = nodes.new('CompositorNodeSeparateColor')
+                dilate_red = nodes.new('CompositorNodeDilateErode')
+                dilate_red.mode = 'DISTANCE'
+                dilate_red.distance = dilation
+                dilate_green = nodes.new('CompositorNodeDilateErode')
+                dilate_green.mode = 'DISTANCE'
+                dilate_green.distance = dilation
+                dilate_blue = nodes.new('CompositorNodeDilateErode')
+                dilate_blue.mode = 'DISTANCE'
+                dilate_blue.distance = dilation
+                combine_color = nodes.new('CompositorNodeCombineColor')
+                alpha_over = nodes.new('CompositorNodeAlphaOver')
                 file_output = nodes.new('CompositorNodeOutputFile')
-                file_output.format.file_format = file_format
                 file_output.file_slots.new('Image2')
                 if use_custom_path and custom_path:
-                    file_output.base_path = custom_path
+                    temp_path = os.path.join(custom_path, "speedtree_temp")
+                    os.makedirs(temp_path)
+                    file_output.base_path = temp_path
                 else:
-                    file_output.base_path = path
-                links.new(mask.outputs['Mask'], key.inputs['Image'])
+                    temp_path = os.path.join(path, "speedtree_temp")
+                    os.makedirs(temp_path)
+                    file_output.base_path = temp_path
+                    
+                links.new(render_node.outputs['DiffCol'], mix.inputs[1])
+                links.new(render_node.outputs['Shadow'], mix.inputs[2])
+                links.new(mix.outputs['Image'], set_alpha.inputs['Image'])
+                links.new(render_node.outputs['Alpha'], set_alpha.inputs['Alpha'])
+                links.new(mix.outputs['Image'], separate_color.inputs['Image'])
+                links.new(separate_color.outputs['Red'], dilate_red.inputs['Mask'])
+                links.new(separate_color.outputs['Green'], dilate_green.inputs['Mask'])
+                links.new(separate_color.outputs['Blue'], dilate_blue.inputs['Mask'])
+                links.new(dilate_red.outputs['Mask'], combine_color.inputs['Red'])
+                links.new(dilate_green.outputs['Mask'], combine_color.inputs['Green'])
+                links.new(dilate_blue.outputs['Mask'], combine_color.inputs['Blue'])
+                links.new(combine_color.outputs['Image'], alpha_over.inputs[1])
+                links.new(set_alpha.outputs['Image'], alpha_over.inputs[2])
+                links.new(alpha_over.outputs['Image'], file_output.inputs[0])
+                links.new(render_node.outputs['Alpha'], file_output.inputs[1])
                 
                 # Add Sun
                 bpy.ops.object.light_add(type='SUN')
@@ -224,18 +258,19 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 bpy.ops.mesh.select_all(action="DESELECT")
                 bpy.ops.object.mode_set(mode='OBJECT')
                 
+                # First Renders - Diffuse + Alpha
                 cameras = []
-                scenes = []
-                view_layers = []
-                collections = []
-                meshes = []
-                geom_nodes = []
+                stored_uvs = []
+                rotations = []
+                for i,_ in enumerate(old_mats):
+                    old_mats[i] = old_mats[i].copy()
+                    old_mats[i].shadow_method = 'OPAQUE'
                 for i, obj in enumerate(objects):
                     selectOnly(obj)
                     mesh = obj.data
                     verts = mesh.vertices
                     mesh.uv_layers[0].name = "DiffuseUV"
-                    render_rotation = 0
+                    rotations.append(0)
                     
                     # Get UVs
                     uvs = np.array(GetLoopDataPerVertex(mesh, "UV", "DiffuseUV"))
@@ -248,14 +283,15 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     uv_y_min = np.min(uvs_y)
                     uv_x_diff = uv_x_max - uv_x_min
                     uv_y_diff = uv_y_max - uv_y_min
+                    stored_uvs.append([uv_x_max, uv_x_min, uv_y_max, uv_y_min])
                     
                     # Horizontal Billboard    
                     if i == number_billboards - 1 and horiz_objects:
                         loc = Vector((0,0,1))
                         billboard_dimensions = [verts[2].co[0] - verts[0].co[0], verts[2].co[1] - verts[0].co[1]]
                         origin_z = np.mean([verts[0].co[2], verts[2].co[2]])
-                        active_scene.render.resolution_x = round(uv_x_diff * resolution)
-                        active_scene.render.resolution_y = round(uv_y_diff * resolution)
+                        temp_scene.render.resolution_x = round(uv_x_diff * resolution)
+                        temp_scene.render.resolution_y = round(uv_y_diff * resolution)
                     
                     # Vertical Billboards
                     else:
@@ -273,15 +309,15 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     
                         # Deal with UV Rotation and Resolution
                         if np.argmax([uv_x_diff, uv_y_diff]) != np.argmax(billboard_dimensions):
-                            render_rotation = radians(90)
+                            rotations[-1] = radians(90)
                             uvs[0] = [uv_x_max, uv_y_max]
                             uvs[1] = [uv_x_max, uv_y_min]
                             uvs[2] = [uv_x_min, uv_y_min]
                             uvs[3] = [uv_x_min, uv_y_max]
                             uv_array = uvs[[1,0,3,3,2,1]].flatten()
                             mesh.attributes["DiffuseUV"].data.foreach_set("vector", uv_array)
-                            active_scene.render.resolution_x = round(uv_y_diff * resolution)
-                            active_scene.render.resolution_y = round(uv_x_diff * resolution)
+                            temp_scene.render.resolution_x = round(uv_y_diff * resolution)
+                            temp_scene.render.resolution_y = round(uv_x_diff * resolution)
                         else:
                             uvs[0] = [uv_x_min, uv_y_min]
                             uvs[1] = [uv_x_max, uv_y_min]
@@ -289,264 +325,181 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                             uvs[3] = [uv_x_min, uv_y_max]
                             uv_array = uvs[[0,1,2,2,3,0]].flatten()
                             mesh.attributes["DiffuseUV"].data.foreach_set("vector", uv_array)
-                            active_scene.render.resolution_x = round(uv_x_diff * resolution)
-                            active_scene.render.resolution_y = round(uv_y_diff * resolution)
-                            
-                    # Make a New Scene and View Layer for Each Billboard
-                    scene = active_scene.copy()
-                    scenes.append(scene)
-                    bpy.context.window.scene = scene
-                    view_layer = bpy.context.view_layer
-                    view_layer.name = "ViewLayer" + str(i+1)
-                    view_layers.append(view_layer)
-                    
-                    # Make Another New Scene for Volume Mesh (shadows)
-                    scene_shadows = active_scene.copy()
-                    scenes.append(scene_shadows)
-                    bpy.context.window.scene = scene_shadows 
-                    view_layer_shadows = bpy.context.view_layer
-                    view_layer_shadows.name = "ViewLayerShadows" + str(i+1)
-                    view_layers.append(view_layer_shadows)
+                            temp_scene.render.resolution_x = round(uv_x_diff * resolution)
+                            temp_scene.render.resolution_y = round(uv_y_diff * resolution)
                     
                     # Place Cameras
                     if i == number_billboards - 1 and horiz_objects:
-                        loc.length = billboard_dimensions[0] * 0.75 + origin_z
+                        loc.length = billboard_dimensions[0] * 2 + origin_z
                         bpy.ops.object.camera_add(location = loc, rotation = [0, 0, 0])
                     else:
-                        loc.length = billboard_dimensions[0] * 0.75
+                        loc.length = billboard_dimensions[0] * 2
                         loc[2] = loc_z
                         bpy.ops.object.camera_add(location = loc, rotation = [np.pi*0.5, 0, rotation])
                     cam = bpy.context.active_object
                     cameras.append(cam)
                     cam.data.type = 'ORTHO'
                     cam.data.ortho_scale = np.max(billboard_dimensions)
-                    scene.camera = cam
-                    scene_shadows.camera = cam
+                    temp_scene.camera = cam
                     
-                    # Make a New Collection for Each Billboard (Necessary for Facing Leaves...)
-                    last_lod_col_number += 1
-                    new_coll = GetCollection("LOD" + str(len(lods_coll) - 1) + str(last_lod_col_number * 0.001)[2:], True, False)
-                    collections.append(new_coll)
-                    selectOnly(last_lod_mesh)
-                    bpy.ops.object.duplicate(linked=False, mode='TRANSLATION')
-                    new_mesh = bpy.context.active_object
-                    meshes.append(new_mesh)
-                    new_coll.objects.link(new_mesh)
-                    last_lod_col.objects.unlink(new_mesh)
-                    new_geom_nodes = last_lod_modif.node_group.copy()
-                    geom_nodes.append(new_geom_nodes)
-                    new_mesh.modifiers['Leaf_Card'].node_group = new_geom_nodes
-                    new_mesh.modifiers['Leaf_Card'].node_group.nodes['Camera'].inputs['Object'].default_value = cam
+                    # Render
+                    file_output.file_slots[0].path = "temp_diffuse_" + str(i)
+                    file_output.file_slots[1].path = "temp_alpha_" + str(i)
+                    bpy.ops.render.render(scene = temp_scene.name)
                     
-                    # Make a New Collection for a Volume Mesh for Each Billboard (Trick for Better Shadows)
-                    new_coll_shadows = GetCollection("LOD" + str(len(lods_coll) - 1) + str(last_lod_col_number * 0.001)[2:] + "Shadows", True, False)
-                    collections.append(new_coll_shadows)
-                    bpy.ops.object.duplicate(linked=False, mode='TRANSLATION')
-                    new_mesh_shadows = bpy.context.active_object
-                    meshes.append(new_mesh_shadows)
-                    new_coll_shadows.objects.link(new_mesh_shadows)
-                    new_coll.objects.unlink(new_mesh_shadows)
-                    bpy.ops.object.modifier_apply(modifier='Leaf_Card')
-                    new_geom_nodes_shadows = bpy.data.node_groups["Volume_Mesh_Template"].copy()
-                    new_geom_nodes_shadows.name = "Volume_Mesh"
-                    modif_shadows = new_mesh_shadows.modifiers.new(type='NODES', name = "Volume_Mesh")
-                    modif_shadows.node_group = new_geom_nodes_shadows
-                    bpy.ops.object.modifier_apply(modifier="Volume_Mesh")
-                    while len(new_mesh_shadows.data.materials):
-                        new_mesh_shadows.data.materials.pop()
-                    
-                    # Make the compositing
-                    mix_shadows = nodes.new('CompositorNodeMixRGB')
-                    mix_shadows.blend_type = 'MULTIPLY'
-                    mix_shadows.inputs['Fac'].default_value = 0.6
-                    erode_shadows = nodes.new('CompositorNodeDilateErode')
-                    erode_shadows.mode = 'FEATHER'
-                    erode_shadows.distance = -5
-                    shadows_aa = nodes.new('CompositorNodeAntiAliasing')
-                    shadows_aa.threshold = 0
-                    reroute_alpha = nodes.new('NodeReroute')
-                    color_ramp = nodes.new('CompositorNodeValToRGB')
-                    color_ramp.color_ramp.elements[0].position = 0.49999995
-                    color_ramp.color_ramp.elements[1].position = 0.49999996
-                    #Dilation
-                    erode_alpha = nodes.new('CompositorNodeDilateErode')
-                    erode_alpha.mode = 'DISTANCE'
-                    erode_alpha.distance = -1
-                    subtract = nodes.new('CompositorNodeMath')
-                    subtract.operation = 'SUBTRACT'
-                    set_alpha_outline = nodes.new('CompositorNodeSetAlpha')
-                    separate_outline = nodes.new('CompositorNodeSeparateColor')
-                    dilate_red = nodes.new('CompositorNodeDilateErode')
-                    dilate_red.mode = 'DISTANCE'
-                    dilate_red.distance = dilation
-                    dilate_green = nodes.new('CompositorNodeDilateErode')
-                    dilate_green.mode = 'DISTANCE'
-                    dilate_green.distance = dilation
-                    dilate_blue = nodes.new('CompositorNodeDilateErode')
-                    dilate_blue.mode = 'DISTANCE'
-                    dilate_blue.distance = dilation
-                    combine_dilated = nodes.new('CompositorNodeCombineColor')
-                    set_alpha_pre = nodes.new('CompositorNodeSetAlpha')
-                    set_alpha_pre.mode = 'REPLACE_ALPHA'
-                    alpha_over_pre = nodes.new('CompositorNodeAlphaOver')
-                    #Transform
-                    set_alpha = nodes.new('CompositorNodeSetAlpha')
-                    set_alpha.mode = 'REPLACE_ALPHA'
-                    transform = nodes.new('CompositorNodeTransform')
-                    transform.inputs['X'].default_value = (((uv_x_max + uv_x_min) * 0.5) - 0.5) * resolution
-                    transform.inputs['Y'].default_value = (((uv_y_max + uv_y_min) * 0.5) - 0.5) * resolution
-                    transform.inputs['Angle'].default_value = render_rotation
-                    alpha_over = nodes.new('CompositorNodeAlphaOver')
-                    #Links
-                    links.new(reroute_alpha.outputs['Output'], color_ramp.inputs['Fac'])
-                    links.new(reroute_alpha.outputs['Output'], set_alpha_pre.inputs['Alpha'])
-                    links.new(erode_shadows.outputs['Mask'], shadows_aa.inputs['Image'])
-                    links.new(shadows_aa.outputs['Image'], mix_shadows.inputs[2])
-                    links.new(mix_shadows.outputs['Image'], set_alpha_pre.inputs['Image'])
-                    links.new(mix_shadows.outputs['Image'], set_alpha_outline.inputs['Image'])
-                    links.new(color_ramp.outputs['Image'], erode_alpha.inputs['Mask'])
-                    links.new(erode_alpha.outputs['Mask'], subtract.inputs[1])
-                    links.new(color_ramp.outputs['Image'], subtract.inputs[0])
-                    links.new(subtract.outputs['Value'], set_alpha_outline.inputs['Alpha'])
-                    links.new(set_alpha_outline.outputs['Image'], separate_outline.inputs['Image'])
-                    links.new(separate_outline.outputs['Red'], dilate_red.inputs['Mask'])
-                    links.new(separate_outline.outputs['Green'], dilate_green.inputs['Mask'])
-                    links.new(separate_outline.outputs['Blue'], dilate_blue.inputs['Mask'])
-                    links.new(separate_outline.outputs['Alpha'], combine_dilated.inputs['Alpha'])
-                    links.new(dilate_red.outputs['Mask'], combine_dilated.inputs['Red'])
-                    links.new(dilate_green.outputs['Mask'], combine_dilated.inputs['Green'])
-                    links.new(dilate_blue.outputs['Mask'], combine_dilated.inputs['Blue'])
-                    links.new(combine_dilated.outputs['Image'], alpha_over_pre.inputs[1])
-                    links.new(set_alpha_pre.outputs['Image'], alpha_over_pre.inputs[2])
-                    links.new(alpha_over_pre.outputs['Image'], set_alpha.inputs['Image'])
-                    links.new(color_ramp.outputs['Image'], set_alpha.inputs['Alpha'])
-                    links.new(set_alpha.outputs['Image'], transform.inputs['Image'])
-                    links.new(transform.outputs['Image'], alpha_over.inputs[2])
-                        
-                    # Render nodes
-                    if not i:
-                        nodes['Render Layers'].scene = scene
-                        nodes['Render Layers'].layer = view_layer.name
-                        render_node_shadows = nodes.new('CompositorNodeRLayers')
-                        render_node_shadows.scene = scene_shadows
-                        render_node_shadows.layer = view_layer_shadows.name
-                        links.new(key.outputs['Image'], alpha_over.inputs[1])
-                        links.new(nodes['Render Layers'].outputs['DiffCol'], mix_shadows.inputs[1])
-                        links.new(nodes['Render Layers'].outputs['Alpha'], reroute_alpha.inputs['Input'])
-                        links.new(render_node_shadows.outputs['Shadow'], erode_shadows.inputs['Mask'])
-                    else:
-                        render_node = nodes.new('CompositorNodeRLayers')
-                        render_node.scene = scene
-                        render_node.layer = view_layer.name
-                        render_node_shadows = nodes.new('CompositorNodeRLayers')
-                        render_node_shadows.scene = scene_shadows
-                        render_node_shadows.layer = view_layer_shadows.name
-                        links.new(alpha_over_previous.outputs['Image'], alpha_over.inputs[1])
-                        links.new(render_node.outputs['DiffCol'], mix_shadows.inputs[1])
-                        links.new(render_node.outputs['Alpha'], reroute_alpha.inputs['Input'])
-                        links.new(render_node_shadows.outputs['Shadow'], erode_shadows.inputs['Mask'])
-                    # File Output
-                    if i == number_billboards - 1:
-                        links.new(alpha_over.outputs['Image'], composite.inputs['Image'])
-                        links.new(alpha_over.outputs['Image'], viewer.inputs['Image'])
-                        links.new(alpha_over.outputs['Image'], file_output.inputs[0])
-                        alpha_over_normal = nodes.new('CompositorNodeAlphaOver')
-                        alpha_over_normal.inputs[1].default_value = (0.219525, 0.21586, 1, 1)
-                        links.new(alpha_over.outputs['Image'], alpha_over_normal.inputs[2])
-                        links.new(alpha_over_normal.outputs['Image'], file_output.inputs[1])
-                        # Make a last unused camera and render otherwise the last render doesn't show up for some reason
-                        scene = active_scene.copy()
-                        scenes.append(scene)
-                        render_node = nodes.new('CompositorNodeRLayers')
-                        render_node.scene = scene
-                            
-                    alpha_over_previous = alpha_over
+                # Second Renders - Ambient
+                links.new(render_node.outputs['DiffCol'], set_alpha.inputs['Image'])
+                links.new(render_node.outputs['DiffCol'], separate_color.inputs['Image'])
+                file_output.file_slots.remove(file_output.inputs[1])
+                for mat in old_mats:
+                    mat_tree = mat.node_tree
+                    mat_nodes = mat_tree.nodes
+                    mat_tree.links.new(mat_nodes['Ambient Color'].outputs['Color'], mat_nodes['Specular BSDF'].inputs['Base Color'])
                 
-                # Make a Diffuse Color Render for Each Billboard    
-                for i,_ in enumerate(scenes):
-                    if i != len(scenes) - 1:
-                        bpy.context.window.scene = scenes[i]
-                        for col in collections:
-                            if collections[i] != col:
-                                GetCollection(col.name, make_active = True)
-                                bpy.context.view_layer.active_layer_collection.exclude = True
-                    # Render
-                    bpy.ops.render.render(scene = scenes[i].name)
-                        
-                # Rename the Diffuse file        
-                old_name = "\\Image0001" + ext
-                placeholder_name = "\\Image20001" + ext
-                old_path = custom_path + old_name if use_custom_path and custom_path else path + old_name
-                new_path = custom_path + filename if use_custom_path and custom_path else path + filename
-                placeholder_path = custom_path + placeholder_name if use_custom_path and custom_path else path + placeholder_name
-                os.remove(placeholder_path)
-                try:
-                    os.rename(old_path, new_path)
-                except FileExistsError:
-                    os.remove(new_path)
-                    os.rename(old_path, new_path)
-                        
-                # Make a Normal Render for Each Billboard
-                for i,_ in enumerate(scenes):
-                    if i != len(scenes) - 1:
-                        old_mats = meshes[i].data.materials
-                        if old_mats:
-                            for j, mat in enumerate(old_mats):
-                                # Deal with Matcap Material
-                                matcap = bpy.data.materials["NORMAL_MATCAP_DIRECT_X_TEMPLATE"].copy()
-                                matcap.name = "NORMAL_MATCAP_DIRECT_X"
-                                matcap_ntree = matcap.node_tree
-                                matcap_links = matcap_ntree.links
-                                matcap_nodes = matcap_ntree.nodes
-                                if mat["EBranchSeamSmoothing"] == 'EFFECT_OFF':
-                                    for link in matcap_nodes["Branch Seam Weight Mult"].outputs['Value'].links:
-                                        matcap_links.remove(link)      
-                                diffuse_texture = mat.node_tree.nodes["Diffuse Texture"].image
-                                matcap_nodes["Branch Seam Diffuse Texture"].image = diffuse_texture
-                                matcap_nodes["Diffuse Texture"].image = diffuse_texture
-                                matcap_nodes["Alpha Scalar"].outputs["Value"].default_value = mat.node_tree.nodes["Alpha Scalar"].outputs["Value"].default_value
-                                normal_texture = mat.node_tree.nodes["Normal Texture"].image
-                                detail_normal_texture = mat.node_tree.nodes["Detail Normal Texture"].image
-                                if not normal_texture:
-                                    matcap_links.remove(matcap_nodes["Bump"].inputs['Height'].links[0])
-                                    matcap_links.remove(matcap_nodes["Bump"].inputs['Normal'].links[0])
-                                else:
-                                    matcap_nodes["Normal Texture"].image = normal_texture
-                                    matcap_nodes["Branch Seam Normal Texture"].image = normal_texture
-                                    matcap_nodes["Detail Normal Texture"].image = detail_normal_texture
-                                    matcap_nodes["Branch Seam Detail Normal Texture"].image = detail_normal_texture
-                                    if mat["EDetailLayer"] == 'EFFECT_OFF':
-                                        matcap_links.remove(matcap_nodes["Mix Detail Normal"].inputs['Fac'].links[0])
-                                old_mats[j] = matcap
-                                
-                        else:
-                            matcap = bpy.data.materials["NORMAL_MATCAP_DIRECT_X_TEMPLATE"].copy()
-                            matcap.name = "NORMAL_MATCAP_DIRECT_X"
-                            old_mats.append(matcap)
-                    # Render
-                    bpy.ops.render.render(scene = scenes[i].name)
-
-                # Rename the Normal file
-                old_name = "\\Image20001" + ext
-                placeholder_name = "\\Image0001" + ext
-                old_path = custom_path + old_name if use_custom_path and custom_path else path + old_name
+                #Render
+                for i, cam in enumerate(cameras):
+                    temp_scene.camera = cam
+                    file_output.file_slots[0].path = "temp_ambient_" + str(i)
+                    bpy.ops.render.render(scene = temp_scene.name)
+                    
+                # Third Renders - Normals
+                for j, mat in enumerate(old_mats):
+                    # Deal with Matcap Material
+                    matcap = bpy.data.materials["NORMAL_MATCAP_DIRECT_X_TEMPLATE"].copy()
+                    matcap.name = "NORMAL_MATCAP_DIRECT_X"
+                    matcap_ntree = matcap.node_tree
+                    matcap_links = matcap_ntree.links
+                    matcap_nodes = matcap_ntree.nodes
+                    if mat["EBranchSeamSmoothing"] == 'EFFECT_OFF':
+                        for link in matcap_nodes["Branch Seam Weight Mult"].outputs['Value'].links:
+                            matcap_links.remove(link)      
+                    diffuse_texture = mat.node_tree.nodes["Diffuse Texture"].image
+                    matcap_nodes["Branch Seam Diffuse Texture"].image = diffuse_texture
+                    matcap_nodes["Diffuse Texture"].image = diffuse_texture
+                    matcap_nodes["Alpha Scalar"].outputs["Value"].default_value = mat.node_tree.nodes["Alpha Scalar"].outputs["Value"].default_value
+                    normal_texture = mat.node_tree.nodes["Normal Texture"].image
+                    detail_normal_texture = mat.node_tree.nodes["Detail Normal Texture"].image
+                    if not normal_texture:
+                        matcap_links.remove(matcap_nodes["Bump"].inputs['Height'].links[0])
+                        matcap_links.remove(matcap_nodes["Bump"].inputs['Normal'].links[0])
+                    else:
+                        matcap_nodes["Normal Texture"].image = normal_texture
+                        matcap_nodes["Branch Seam Normal Texture"].image = normal_texture
+                        matcap_nodes["Detail Normal Texture"].image = detail_normal_texture
+                        matcap_nodes["Branch Seam Detail Normal Texture"].image = detail_normal_texture
+                        if mat["EDetailLayer"] == 'EFFECT_OFF':
+                            matcap_links.remove(matcap_nodes["Mix Detail Normal"].inputs['Fac'].links[0])
+                    old_mats[j] = matcap
+                
+                #Render
+                for i, cam in enumerate(cameras):
+                    temp_scene.camera = cam
+                    file_output.file_slots[0].path = "temp_normal_" + str(i)
+                    bpy.ops.render.render(scene = temp_scene.name)
+                    
+                # Assemble the Textures
+                temp_bg = bpy.data.images.new("Untitled", resolution, resolution)
+                bg = nodes.new('CompositorNodeImage')
+                bg.image = temp_bg
+                for i in range(len(cameras)):
+                    rgb = nodes.new('CompositorNodeImage')
+                    rgb.image = bpy.data.images.load(temp_path + "\\temp_diffuse_" + str(i) + "0001.png", check_existing = True)
+                    transform_rgb = nodes.new('CompositorNodeTransform')
+                    transform_rgb.inputs['X'].default_value = (((stored_uvs[i][0] + stored_uvs[i][1]) * 0.5) - 0.5) * resolution
+                    transform_rgb.inputs['Y'].default_value = (((stored_uvs[i][2] + stored_uvs[i][3]) * 0.5) - 0.5) * resolution
+                    transform_rgb.inputs['Angle'].default_value = rotations[i]
+                    alpha_over_rgb = nodes.new('CompositorNodeAlphaOver')
+                    alpha = nodes.new('CompositorNodeImage')
+                    alpha.image = bpy.data.images.load(temp_path + "\\temp_alpha_" + str(i) + "0001.png", check_existing = True)
+                    transform_alpha = nodes.new('CompositorNodeTransform')
+                    transform_alpha.inputs['X'].default_value = (((stored_uvs[i][0] + stored_uvs[i][1]) * 0.5) - 0.5) * resolution
+                    transform_alpha.inputs['Y'].default_value = (((stored_uvs[i][2] + stored_uvs[i][3]) * 0.5) - 0.5) * resolution
+                    transform_alpha.inputs['Angle'].default_value = rotations[i]
+                    alpha_over_alpha = nodes.new('CompositorNodeAlphaOver')
+                    normal = nodes.new('CompositorNodeImage')
+                    normal.image = bpy.data.images.load(temp_path + "\\temp_normal_" + str(i) + "0001.png", check_existing = True)
+                    transform_normal = nodes.new('CompositorNodeTransform')
+                    transform_normal.inputs['X'].default_value = (((stored_uvs[i][0] + stored_uvs[i][1]) * 0.5) - 0.5) * resolution
+                    transform_normal.inputs['Y'].default_value = (((stored_uvs[i][2] + stored_uvs[i][3]) * 0.5) - 0.5) * resolution
+                    transform_normal.inputs['Angle'].default_value = rotations[i]
+                    alpha_over_normal = nodes.new('CompositorNodeAlphaOver')
+                    ambient = nodes.new('CompositorNodeImage')
+                    ambient.image = bpy.data.images.load(temp_path + "\\temp_ambient_" + str(i) + "0001.png", check_existing = True)
+                    transform_ambient = nodes.new('CompositorNodeTransform')
+                    transform_ambient.inputs['X'].default_value = (((stored_uvs[i][0] + stored_uvs[i][1]) * 0.5) - 0.5) * resolution
+                    transform_ambient.inputs['Y'].default_value = (((stored_uvs[i][2] + stored_uvs[i][3]) * 0.5) - 0.5) * resolution
+                    transform_ambient.inputs['Angle'].default_value = rotations[i]
+                    alpha_over_ambient = nodes.new('CompositorNodeAlphaOver')
+                    
+                    links.new(rgb.outputs['Image'], transform_rgb.inputs['Image'])
+                    links.new(alpha.outputs['Image'], transform_alpha.inputs['Image'])
+                    links.new(normal.outputs['Image'], transform_normal.inputs['Image'])
+                    links.new(ambient.outputs['Image'], transform_ambient.inputs['Image'])
+                    links.new(transform_rgb.outputs['Image'], alpha_over_rgb.inputs[2])
+                    links.new(transform_alpha.outputs['Image'], alpha_over_alpha.inputs[2])
+                    links.new(transform_normal.outputs['Image'], alpha_over_normal.inputs[2])
+                    links.new(transform_ambient.outputs['Image'], alpha_over_ambient.inputs[2])
+                    if not i:
+                        links.new(bg.outputs['Image'], alpha_over_rgb.inputs[1])
+                        links.new(bg.outputs['Image'], alpha_over_alpha.inputs[1])
+                        links.new(bg.outputs['Image'], alpha_over_normal.inputs[1])
+                        links.new(bg.outputs['Image'], alpha_over_ambient.inputs[1])
+                    else:
+                        links.new(alpha_over_previous_rgb.outputs['Image'], alpha_over_rgb.inputs[1])
+                        links.new(alpha_over_previous_alpha.outputs['Image'], alpha_over_alpha.inputs[1])
+                        links.new(alpha_over_previous_normal.outputs['Image'], alpha_over_normal.inputs[1])
+                        links.new(alpha_over_previous_ambient.outputs['Image'], alpha_over_ambient.inputs[1])
+                    alpha_over_previous_rgb = alpha_over_rgb
+                    alpha_over_previous_alpha = alpha_over_alpha
+                    alpha_over_previous_normal = alpha_over_normal
+                    alpha_over_previous_ambient = alpha_over_ambient
+                
+                set_alpha_diffuse = nodes.new('CompositorNodeSetAlpha')
+                #set_alpha_diffuse.mode = 'REPLACE_ALPHA'
+                set_alpha_normal = nodes.new('CompositorNodeSetAlpha')
+                #set_alpha_normal.mode = 'REPLACE_ALPHA'
+                file_output.base_path = custom_path if use_custom_path and custom_path else path
+                file_output.format.file_format = file_format
+                file_output.file_slots[0].path = "temp_billboard"
+                file_output.file_slots.new('temp_billboard_n')
+                
+                links.new(alpha_over_rgb.outputs['Image'], set_alpha_diffuse.inputs[0])
+                links.new(alpha_over_alpha.outputs['Image'], set_alpha_diffuse.inputs[1])
+                links.new(alpha_over_normal.outputs['Image'], set_alpha_normal.inputs[0])
+                links.new(alpha_over_ambient.outputs['Image'], set_alpha_normal.inputs[1])
+                links.new(set_alpha_diffuse.outputs['Image'], file_output.inputs[0])
+                links.new(set_alpha_normal.outputs['Image'], file_output.inputs[1])
+                
+                # Render
+                bpy.ops.render.render(scene = temp_scene.name)
+                
+                # Rename the files
+                old_name_diff = "\\temp_billboard0001" + ext
+                old_name_normal = "\\temp_billboard_n0001" + ext
+                old_path_diff = custom_path + old_name_diff if use_custom_path and custom_path else path + old_name_diff
+                old_path_normal = custom_path + old_name_normal if use_custom_path and custom_path else path + old_name_normal
+                new_path_diff = custom_path + filename if use_custom_path and custom_path else path + filename
                 new_path_normal = custom_path + filename_normal if use_custom_path and custom_path else path + filename_normal
-                placeholder_path = custom_path + placeholder_name if use_custom_path and custom_path else path + placeholder_name
-                os.remove(placeholder_path)
                 try:
-                    os.rename(old_path, new_path_normal)
+                    os.rename(old_path_diff, new_path_diff)
+                except FileExistsError:
+                    os.remove(new_path_diff)
+                    os.rename(old_path_diff, new_path_diff)
+                try:
+                    os.rename(old_path_normal, new_path_normal)
                 except FileExistsError:
                     os.remove(new_path_normal)
-                    os.rename(old_path, new_path_normal)
+                    os.rename(old_path_normal, new_path_normal)
                     
                 # Convert to DDS if requested
                 if is_dds:
-                    texconv.convert_to_dds(file = new_path, dds_fmt = dds_dxgi, out = path)
-                    texconv.convert_to_dds(file = new_path_normal, dds_fmt = dds_dxgi, out = path)
+                    slow_codec = True if dds_dxgi == 'BC7_UNORM' else False
+                    texconv.convert_to_dds(file = new_path_diff, dds_fmt = dds_dxgi, out = path, allow_slow_codec = slow_codec)
+                    texconv.convert_to_dds(file = new_path_normal, dds_fmt = dds_dxgi, out = path, allow_slow_codec = slow_codec)
                     texconv.unload_dll()
-                    os.remove(new_path)
+                    os.remove(new_path_diff)
                     os.remove(new_path_normal)
-                    new_path = new_path[:-3] + "dds"
+                    new_path_diff = new_path_diff[:-3] + "dds"
                     new_path_normal = new_path_normal[:-3] + "dds"
                     filename = filename[:-3] + "dds"
                     filename_normal = filename_normal[:-3] + "dds"
@@ -561,9 +514,9 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                         bpy.data.images.remove(image_to_remove)
                     if is_dds:
                         from blender_dds_addon.ui.import_dds import load_dds
-                        image = load_dds(new_path)
+                        image = load_dds(new_path_diff)
                         image.name += ".dds"
-                        image.filepath = new_path
+                        image.filepath = new_path_diff
                         image.colorspace_settings.name = 'sRGB'
                         billboard_mat_nodes["Diffuse Texture"].image = image
                         billboard_mat_nodes["Branch Seam Diffuse Texture"].image = image
@@ -574,30 +527,30 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                         billboard_mat_nodes["Normal Texture"].image = image_normal
                         billboard_mat_nodes["Branch Seam Normal Texture"].image = image_normal
                     else:
-                        billboard_mat_nodes["Diffuse Texture"].image = bpy.data.images.load(new_path)
-                        billboard_mat_nodes["Diffuse Texture"].image.colorspace_settings.name = 'sRGB'
-                        billboard_mat_nodes["Branch Seam Diffuse Texture"].image = bpy.data.images.load(new_path, check_existing = True)
-                        billboard_mat_nodes["Normal Texture"].image = bpy.data.images.load(new_path_normal)
-                        billboard_mat_nodes["Normal Texture"].image.colorspace_settings.name = 'Non-Color'
-                        billboard_mat_nodes["Branch Seam Normal Texture"].image = bpy.data.images.load(new_path_normal, check_existing = True)
+                        image = bpy.data.images.load(new_path_diff)
+                        image.colorspace_settings.name = 'sRGB'
+                        billboard_mat_nodes["Diffuse Texture"].image = image
+                        billboard_mat_nodes["Branch Seam Diffuse Texture"].image = image
+                        image_normal = bpy.data.images.load(new_path_normal)
+                        image_normal.colorspace_settings.name = 'Non-Color'
+                        billboard_mat_nodes["Normal Texture"].image = image_normal
+                        billboard_mat_nodes["Branch Seam Normal Texture"].image = image_normal
                 
                 # Clean up
+                rmtree(temp_path)
                 bpy.data.objects.remove(sun)
-                for node in nodes:
-                    if node != nodes["Composite"] and node != nodes['Render Layers']:
-                        nodes.remove(node)
+                bpy.data.scenes.remove(temp_scene)
+                bpy.data.collections.remove(temp_coll)
+                bpy.data.images.remove(temp_bg)
                 for cam in cameras:
                     bpy.data.objects.remove(cam)
-                for scene in scenes:
-                    bpy.data.scenes.remove(scene)
-                for col in collections: 
-                    bpy.data.collections.remove(col)
-                        
+      
                 # Purge orphan data left unused
                 override = bpy.context.copy()
                 override["area.type"] = ['OUTLINER']
                 override["display_mode"] = ['ORPHAN_DATA']
-                bpy.ops.outliner.orphans_purge(override)
+                with bpy.context.temp_override(**override):
+                    bpy.ops.outliner.orphans_purge()
                         
                 GetCollection()
                                   

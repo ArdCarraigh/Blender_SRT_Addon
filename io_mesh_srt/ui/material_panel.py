@@ -27,7 +27,7 @@ class SpeedTreeMaterialPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'material':
             
             layout = self.layout
@@ -82,7 +82,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'texture':
             
             layout = self.layout
@@ -133,10 +133,10 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                         if wm.EBranchSeamSmoothing != mat["EBranchSeamSmoothing"]:
                             wm.EBranchSeamSmoothing = mat["EBranchSeamSmoothing"]
                         if len(nodes['Branch Seam Weight Mult'].outputs['Value'].links) != 10:
-                            wm.EBranchSeamSmoothing = 'EFFECT_OFF'
+                            wm.EBranchSeamSmoothing = 'OFF'
                              
                         box_row = box.row()
-                        box_row.enabled = wm.EBranchSeamSmoothing in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.EBranchSeamSmoothing in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "FBranchSeamWeight", text = "Branch Seam Weight")
                         if wm.FBranchSeamWeight != nodes["Branch Seam Weight"].outputs["Value"].default_value:
                             wm.FBranchSeamWeight = nodes["Branch Seam Weight"].outputs["Value"].default_value
@@ -150,18 +150,20 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                         if wm.EDetailLayer != mat["EDetailLayer"]:
                             wm.EDetailLayer = mat["EDetailLayer"]
                         if not nodes['Mix Detail Diffuse'].inputs["Fac"].links or not nodes['Mix Detail Normal'].inputs["Fac"].links:
-                            wm.EDetailLayer = 'EFFECT_OFF'
+                            wm.EDetailLayer = 'OFF'
                         
                         box_row = box.row()
                         box_row.label(text = "Detail Texture")
-                        box_row.enabled = wm.EDetailLayer in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row = box.row()
+                        box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
                         box_row.template_ID(wm, "detailTexture", new="image.new", open="image.open")
                         if wm.detailTexture != nodes["Detail Texture"].image:
                             wm.detailTexture = nodes["Detail Texture"].image
                             
                         box_row = box.row()
                         box_row.label(text = "Detail Normal Texture")
-                        box_row.enabled = wm.EDetailLayer in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row = box.row()
+                        box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
                         box_row.template_ID(wm, "detailNormalTexture", new="image.new", open="image.open")
                         if wm.detailNormalTexture != nodes["Detail Normal Texture"].image:
                             wm.detailNormalTexture = nodes["Detail Normal Texture"].image
@@ -178,7 +180,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'colorset':
             
             layout = self.layout
@@ -219,10 +221,10 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         if wm.EAmbientContrast != mat["EAmbientContrast"]:
                             wm.EAmbientContrast = mat["EAmbientContrast"]
                         if not nodes['Ambient Color Final'].inputs[7].links or not nodes["Mix Shadow Contrast"].inputs[7].links:
-                            wm.EAmbientContrast = 'EFFECT_OFF'
+                            wm.EAmbientContrast = 'OFF'
                         
                         box_row = box.row()
-                        box_row.enabled = wm.EAmbientContrast in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.EAmbientContrast in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "FAmbientContrastFactor", text = 'Ambient Contrast Factor')
                         if wm.FAmbientContrastFactor != nodes["Ambient Contrast Factor"].outputs["Value"].default_value:
                             wm.FAmbientContrastFactor = nodes["Ambient Contrast Factor"].outputs["Value"].default_value
@@ -235,17 +237,17 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         if wm.ESpecular != mat["ESpecular"]:
                             wm.ESpecular = mat["ESpecular"]
                         if not nodes['Specular BSDF'].inputs['Roughness'].links or not nodes['Specular BSDF'].inputs['Specular'].links:
-                            wm.ESpecular = 'EFFECT_OFF'
+                            wm.ESpecular = 'OFF'
                             
                         box_row = box.row()
                         box_row.label(text="Specular Color")
-                        box_row.enabled = wm.ESpecular in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "VSpecularColor", text = '')
                         if wm.VSpecularColor!= nodes["Specular Color"].outputs["Color"].default_value:
                             wm.VSpecularColor = nodes["Specular Color"].outputs["Color"].default_value
                             
                         box_row = box.row()
-                        box_row.enabled = wm.ESpecular in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "FShininess", text = 'Shininess')
                         if wm.FShininess != nodes["Shininess"].outputs["Value"].default_value:
                             wm.FShininess = nodes["Shininess"].outputs["Value"].default_value
@@ -258,23 +260,23 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                         if wm.ETransmission != mat["ETransmission"]:
                             wm.ETransmission = mat["ETransmission"]
                         if  not nodes["Mix Transmission Color"].inputs["Factor"].links or not nodes["Invert Transmission Mask"].inputs["Color"].links or not nodes["Mix Transmission Final"].inputs[0].links:
-                            wm.ETransmission = 'EFFECT_OFF'
+                            wm.ETransmission = 'OFF'
                             
                         box_row = box.row()
                         box_row.label(text="Transmission Color")
-                        box_row.enabled = wm.ETransmission in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "VTransmissionColor", text = '')
                         if wm.VTransmissionColor!= nodes["Transmission Color"].outputs["Color"].default_value:
                             wm.VTransmissionColor = nodes["Transmission Color"].outputs["Color"].default_value
                             
                         box_row = box.row()
-                        box_row.enabled = wm.ETransmission in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "FTransmissionViewDependency", text = 'View Influence')
                         if wm.FTransmissionViewDependency != nodes["Transmission View Dependency"].outputs["Value"].default_value:
                             wm.FTransmissionViewDependency = nodes["Transmission View Dependency"].outputs["Value"].default_value
                             
                         box_row = box.row()
-                        box_row.enabled = wm.ETransmission in ["EFFECT_OFF_X_ON", "EFFECT_ON"]
+                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
                         box_row.prop(wm, "FTransmissionShadowBrightness", text = 'Shadow Brightness')
                         if wm.FTransmissionShadowBrightness != nodes["Transmission Shadow Brightness"].outputs["Value"].default_value:
                             wm.FTransmissionShadowBrightness = nodes["Transmission Shadow Brightness"].outputs["Value"].default_value
@@ -288,11 +290,13 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                             wm.FAlphaScalar = nodes["Alpha Scalar"].outputs["Value"].default_value
                         
                         box_row = box.row()
+                        box_row.label(text="Culling Method")
+                        box_row = box.row()
                         box_row.prop(wm, "EFaceCulling", text = "")
                         if wm.EFaceCulling != mat["EFaceCulling"]:
                             wm.EFaceCulling = mat["EFaceCulling"]
                         if mat.use_backface_culling:
-                            wm.EFaceCulling = 'CULLTYPE_BACK'
+                            wm.EFaceCulling = 'BACK'
                             
         return
     
@@ -306,7 +310,7 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'other':
             
             layout = self.layout
@@ -350,17 +354,23 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
                         box.prop(wm, "BShadowSmoothing", text = "Shadow Smoothing")
                         if wm.BShadowSmoothing != mat["BShadowSmoothing"]:
                             wm.BShadowSmoothing = mat["BShadowSmoothing"]
-                            
+                        
+                        box_row = box.row()
+                        box_row.label(text="Fog Curve")    
                         box_row = box.row()
                         box_row.prop(wm, "EFogCurve", text = '')
                         if wm.EFogCurve!= mat["EFogCurve"]:
                             wm.EFogCurve = mat["EFogCurve"]
                         
                         box_row = box.row()
+                        box_row.label(text="Fog Curve Style")  
+                        box_row = box.row()
                         box_row.prop(wm, "EFogColorStyle", text = '')
                         if wm.EFogColorStyle!= mat["EFogColorStyle"]:
                             wm.EFogColorStyle = mat["EFogColorStyle"]
-                            
+                        
+                        box_row = box.row()
+                        box_row.label(text="Wind LOD")      
                         box_row = box.row()
                         box_row.prop(wm, "EWindLod", text = '')
                         if wm.EWindLod!= mat["EWindLod"]:
@@ -451,7 +461,7 @@ def updateEAmbientContrast(self, context):
             links.remove(input1.links[0])
         while input2.links:
             links.remove(input2.links[0])
-        if self.EAmbientContrast in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
+        if self.EAmbientContrast in ["OFF__X__ON", "ON"]:
             links.new(nodes['Ambient Contrast'].outputs['Color'], input1)
             links.new(nodes['Ambient Contrast'].outputs['Color'], input2)
                 
@@ -510,7 +520,7 @@ def updateEDetailLayer(self, context):
             links.remove(input1.links[0])
         while input2.links:
             links.remove(input2.links[0])
-        if self.EDetailLayer in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
+        if self.EDetailLayer in ["OFF__X__ON", "ON"]:
             links.new(nodes["Mix Detail Alpha Seam Blending"].outputs["Color"], input1)
             links.new(nodes['Mix Detail Normal Alpha Seam Blending'].outputs["Color"], input2)
                 
@@ -528,7 +538,7 @@ def updateESpecular(self, context):
             links.remove(input1.links[0])
         while input2.links:
             links.remove(input2.links[0])
-        if self.ESpecular in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
+        if self.ESpecular in ["OFF__X__ON", "ON"]:
             links.new(nodes["Mix Shininess"].outputs[2], input1)
             links.new(nodes['Mix Specular'].outputs[2], input2)
                 
@@ -559,7 +569,7 @@ def updateETransmission(self, context):
             links.remove(input2.links[0])
         while input3.links:
             links.remove(input3.links[0])
-        if self.ETransmission in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
+        if self.ETransmission in ["OFF__X__ON", "ON"]:
             links.new(nodes["Mix Specular Alpha Seam Blending"].outputs["Color"], input1)
             links.new(nodes["Mix Transmission Mask"].outputs[2], input2)
             links.new(nodes["Mix Transmission Pre Final"].outputs[2], input3)
@@ -590,7 +600,7 @@ def updateEBranchSeamSmoothing(self, context):
         weight_mult_output = nodes['Branch Seam Weight Mult'].outputs['Value']
         while weight_mult_output.links:
             links.remove(weight_mult_output.links[0])
-        if self.EBranchSeamSmoothing in ["EFFECT_OFF_X_ON", "EFFECT_ON"]:
+        if self.EBranchSeamSmoothing in ["OFF__X__ON", "ON"]:
             links.new(weight_mult_output, nodes['Mix Diffuse Seam Blending'].inputs["Fac"])
             links.new(weight_mult_output, nodes['Mix Diffuse Alpha Seam Blending'].inputs["Fac"])
             links.new(weight_mult_output, nodes['Mix Normal Seam Blending'].inputs["Fac"])
@@ -612,7 +622,7 @@ def updateEFaceCulling(self, context):
     if "SpeedTreeTag" in ob.data:
         mat = ob.active_material
         mat["EFaceCulling"] = self.EFaceCulling
-        if self.EFaceCulling == "CULLTYPE_BACK":
+        if self.EFaceCulling == "BACK":
             mat.use_backface_culling = True
         else:
             mat.use_backface_culling = False
@@ -741,9 +751,9 @@ PROPS_Material_Panel = [
         update = updateEAmbientContrast,
         description="Darken the transitional area between the diffuse color and the ambient color !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable ambient contrast"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable ambient contrast only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable ambient contrast"))
+            ('OFF', "OFF", "Disable ambient contrast"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable ambient contrast only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable ambient contrast"))
     )),
 ("FAmbientContrastFactor", FloatProperty(
         name="Ambient Contrast Factor",
@@ -786,18 +796,18 @@ PROPS_Material_Panel = [
         update = updateEDetailLayer,
         description="Add a detail texture layer",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable detail layer"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable detail layer only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable detail layer"))
+            ('OFF', "OFF", "Disable detail layer"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable detail layer only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable detail layer"))
     )),
 ("ESpecular", EnumProperty(
         name="Specular",
         update = updateESpecular,
         description="Add a specular effect",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable specular"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable specular only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable specular"))
+            ('OFF', "OFF", "Disable specular"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable specular only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable specular"))
     )),
 ("FShininess", FloatProperty(
         name="Shininess",
@@ -822,9 +832,9 @@ PROPS_Material_Panel = [
         update = updateETransmission,
         description="Add a transmission effect",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable transmission"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable transmission only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable transmission"))
+            ('OFF', "OFF", "Disable transmission"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable transmission only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable transmission"))
     )),
 ("VTransmissionColor", FloatVectorProperty(
         name="Transmission Color",
@@ -857,9 +867,9 @@ PROPS_Material_Panel = [
         update = updateEBranchSeamSmoothing,
         description="Enable/disable branch seam smoothing",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable branch seam smoothing"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable branch seam smoothing only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable branch seam smoothing"))
+            ('OFF', "OFF", "Disable branch seam smoothing"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable branch seam smoothing only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable branch seam smoothing"))
     )),
 ("FBranchSeamWeight", FloatProperty(
         name="Branch Seam Weight",
@@ -874,9 +884,9 @@ PROPS_Material_Panel = [
         update = updateEFaceCulling,
         description="Set the culling method of the selected material",
         items=(
-            ('CULLTYPE_NONE', "CULLTYPE_NONE", "Disable face culling"),
-            ('CULLTYPE_BACK', "CULLTYPE_BACK", "Enable backface culling"),
-            ('CULLTYPE_FRONT', "CULLTYPE_FRONT", "Enable frontface culling !!! NOT SUPPORTED IN BLENDER !!!"))
+            ('NONE', "NONE", "Disable face culling"),
+            ('BACK', "BACK", "Enable backface culling"),
+            ('FRONT', "FRONT", "Enable frontface culling !!! NOT SUPPORTED IN BLENDER !!!"))
     )),
 ("BBlending", BoolProperty(
         name="Blending",
@@ -888,34 +898,34 @@ PROPS_Material_Panel = [
         update = updateEAmbientImageLighting,
         description="No idea !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable ambient image lighting"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable ambient image lighting only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable ambient image lighting"))
+            ('OFF', "OFF", "Disable ambient image lighting"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable ambient image lighting only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable ambient image lighting"))
     )),
 ("EHueVariation", EnumProperty(
         name="Hue Variation",
         update = updateEHueVariation,
         description="Add semi-random hues to individual instances of the selected material !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('EFFECT_OFF', "EFFECT_OFF", "Disable hue variation"),
-            ('EFFECT_OFF_X_ON', "EFFECT_OFF_X_ON", "Enable hue variation only where needed? Considered ON in Blender"),
-            ('EFFECT_ON', "EFFECT_ON", "Enable hue variation"))
+            ('OFF', "OFF", "Disable hue variation"),
+            ('OFF__X__ON', "OFF__X__ON", "Enable hue variation only where needed? Considered ON in Blender"),
+            ('ON', "ON", "Enable hue variation"))
     )),
 ("EFogCurve", EnumProperty(
         name="Fog Curve",
         update = updateEFogCurve,
         description="No idea !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('FOG_CURVE_NONE', "FOG_CURVE_NONE", "Disable fog curve"),
-            ('FOG_CURVE_LINEAR', "FOG_CURVE_LINEAR", "Enable the linear fog curve"))
+            ('NONE', "NONE", "Disable fog curve"),
+            ('LINEAR', "LINEAR", "Enable the linear fog curve"))
     )),
 ("EFogColorStyle", EnumProperty(
         name="Fog Color Style",
         update = updateEFogColorStyle,
         description="No idea !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('FOG_COLOR_TYPE_CONSTANT', "FOG_COLOR_TYPE_CONSTANT", "Make the fog color constant along the curve?"),
-            ('FOG_COLOR_TYPE_DYNAMIC', "FOG_COLOR_TYPE_DYNAMIC", "Make the fog color dynamic along the curve?"))
+            ('CONSTANT', "CONSTANT", "Make the fog color constant along the curve?"),
+            ('DYNAMIC', "DYNAMIC", "Make the fog color dynamic along the curve?"))
     )),
 ("BCastsShadows", BoolProperty(
         name="Casts Shadows",
@@ -945,14 +955,14 @@ PROPS_Material_Panel = [
         update = updateEWindLod,
         description="No idea !!! NOT SUPPORTED IN BLENDER !!!",
         items=(
-            ('WIND_LOD_NONE', "WIND_LOD_NONE", "No idea"),
-            ('WIND_LOD_NONE_X_BRANCH', "WIND_LOD_NONE_X_BRANCH", "No idea"),
-            ('WIND_LOD_BRANCH', "WIND_LOD_BRANCH", "No idea"),
-            ('WIND_LOD_BRANCH_X_FULL', 'WIND_LOD_BRANCH_X_FULL', "No idea"),
-            ('WIND_LOD_FULL', 'WIND_LOD_FULL', "No idea"),
-            ('WIND_LOD_GLOBAL', "WIND_LOD_GLOBAL", "No idea"),
-            ('WIND_LOD_GLOBAL_X_BRANCH', 'WIND_LOD_GLOBAL_X_BRANCH', "No idea"),
-            ('WIND_LOD_GLOBAL_X_FULL', 'WIND_LOD_GLOBAL_X_FULL', "No idea"))
+            ('NONE', "NONE", "No idea"),
+            ('CROSSFADE_NONE_TO_BRANCH', "CROSSFADE_NONE_TO_BRANCH", "No idea"),
+            ('BRANCH', "BRANCH", "No idea"),
+            ('CROSSFADE_BRANCH_TO_FULL', 'CROSSFADE_BRANCH_TO_FULL', "No idea"),
+            ('FULL', 'FULL', "No idea"),
+            ('GLOBAL', "GLOBAL", "No idea"),
+            ('CROSSFADE_GLOBAL_TO_BRANCH', 'CROSSFADE_GLOBAL_TO_BRANCH', "No idea"),
+            ('CROSSFADE_GLOBAL_TO_FULL', 'CROSSFADE_GLOBAL_TO_FULL', "No idea"))
     )),
 ("BBranchesPresent", BoolProperty(
         name="Branches Present",

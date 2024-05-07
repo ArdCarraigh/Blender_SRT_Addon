@@ -20,7 +20,8 @@ def JoinThem(objects):
     override = bpy.context.copy()
     override["area.type"] = ['OUTLINER']
     override["display_mode"] = ['ORPHAN_DATA']
-    bpy.ops.outliner.orphans_purge(override)
+    with bpy.context.temp_override(**override):
+        bpy.ops.outliner.orphans_purge()
 
 def GetLoopDataPerVertex(mesh, type, layername = None):
     corner_verts = mesh.attributes[".corner_vert"].data
@@ -167,8 +168,8 @@ def ImportTemplates():
 def getAttributesComponents(attributes):
     components = []
     for i in range(len(attributes)):
-        if attributes[i] == "VERTEX_ATTRIB_UNASSIGNED":
-            components.append("VERTEX_COMPONENT_UNASSIGNED")
+        if attributes[i] == "UNASSIGNED":
+            components.append("UNASSIGNED")
         else:
             n = 0
             for j in range(len(attributes[:i])):
@@ -176,61 +177,44 @@ def getAttributesComponents(attributes):
                     n += 1
             match n:
                 case 0:
-                    components.append("VERTEX_COMPONENT_X")
+                    components.append("X")
                 case 1:
-                    components.append("VERTEX_COMPONENT_Y")
+                    components.append("Y")
                 case 2:
-                    components.append("VERTEX_COMPONENT_Z")
+                    components.append("Z")
                 case 3:
-                    components.append("VERTEX_COMPONENT_W")
-    return(components)
+                    components.append("W")
+    return components
 
-def getVertexProperty(srtVert, prop_id, data, count, format, property_name, start_offset, add_offsets, prop_count):
-    new_offsets = (np.array(start_offset).repeat(count) + add_offsets).tolist()
-    # Deal with constants
-    for i in range(len(data)):
-        if isnan(data[i]) or isinf(data[i]):
-            data[i] = json.dumps(data[i])
-    srtVert["VertexProperties"][prop_id]["ValueCount"] =  count
-    srtVert["VertexProperties"][prop_id]["FloatValues"] =  data
-    srtVert["VertexProperties"][prop_id]["PropertyFormat"] = format
-    srtVert["VertexProperties"][prop_id]["ValueOffsets"] = new_offsets
-    offset_shift = count
-    if format == "VERTEX_FORMAT_HALF_FLOAT":
-        offset_shift = offset_shift * 2
-    elif format == "VERTEX_FORMAT_BYTE":
-        offset_shift = offset_shift
-    start_offset += offset_shift
-    prop_count += count
-    return start_offset, new_offsets, prop_count
-
-def updateVertexProperties(property_name, format, count, new_offsets, properties, components, offsets, formats):
-    properties.extend(np.array(property_name).repeat(count).tolist())
+def updateVertexProperties(property_name, format, count, start_offset, add_offsets, properties, components, offsets, formats):
     match count:
         case 1:
-            components.extend(["VERTEX_COMPONENT_X"])
+            components.extend(["X"])
         case 2:  
-            components.extend(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y"])
+            components.extend(["X", "Y"])
         case 3:    
-            components.extend(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z"])
+            components.extend(["X", "Y", "Z"])
         case 4:    
-            components.extend(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z", "VERTEX_COMPONENT_W"])
+            components.extend(["X", "Y", "Z", "W"])
+    new_offsets = (np.array(start_offset).repeat(count) + add_offsets).tolist()
     offsets.extend(new_offsets)
+    properties.extend(np.array(property_name).repeat(count).tolist())
     formats.extend(np.array(format).repeat(count).tolist())
+    if format == "HALF_FLOAT":
+        count *= 2
+    start_offset += count
+    return start_offset
 
 def setAttribute(srtAttributes, attrib_id, attrib_name, format, properties, components, offsets, attributes_components, attributes):
     if attrib_name in properties:
         properties_array = np.array(properties)
         components_array = np.array(components)
         attrib = [-1,-1,-1,-1]
-        for i, comp in enumerate(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y", "VERTEX_COMPONENT_Z", "VERTEX_COMPONENT_W"]): 
+        for i, comp in enumerate(["X", "Y", "Z", "W"]): 
             id = np.where((properties_array == attrib_name) & (components_array == comp))[0]
             if id.size:
                 attrib[i] = id[0]
-        srtAttributes[attrib_id]["AeAttribs"] = [attributes[x] for x in attrib]
-        srtAttributes[attrib_id]["AeAttribComponents"] = [attributes_components[x] for x in attrib]
-        srtAttributes[attrib_id]["AuiOffsets"] = [offsets[x] for x in attrib]
-        srtAttributes[attrib_id]["EFormat"] = format
+        srtAttributes[attrib_id] = {'format': format, 'attributes': [attributes[x] for x in attrib], 'components': [attributes_components[x] for x in attrib], 'offsets': [offsets[x] for x in attrib]}
         
 def getSphere(obj, compute_radius = True):
     selectOnly(obj)
@@ -259,21 +243,21 @@ def checkWeightPaint(obj, geom_type = 0, wind_flag = 0):
                     case "WindWeight1"|"WindWeight2"|"WindNormal1"|"WindNormal2"|"WindExtra1"|"WindExtra2"|"WindExtra3"|"AmbientOcclusion"|"SeamBlending":
                         obj.vertex_groups[layer].add([k], 0, 'REPLACE')
                         
-def getMaterial(main_coll, mat, srtMat):
+def getMaterial(main_coll, mat, srtRender):
     # Collection Settings
-    for prop in srtMat:
+    for prop in srtRender:
         if prop in main_coll:
             if prop == 'BUsedAsGrass':
-                srtMat[prop] = bool(main_coll[prop])
+                srtRender[prop] = bool(main_coll[prop])
             else:    
-                srtMat[prop] = main_coll[prop]
+                srtRender[prop] = main_coll[prop]
     
     # Material Custom Attributes
     for prop, value in list(mat.items()):
         if prop in ["BBlending", "BReceivesShadows", "BShadowSmoothing", "BBranchesPresent", "BFrondsPresent", "BLeavesPresent", "BFacingLeavesPresent", "BRigidMeshesPresent"]:
-            srtMat[prop] = bool(value)
+            srtRender[prop] = bool(value)
         else:
-            srtMat[prop] = value
+            srtRender[prop] = value
         
     # Material Nodes
     n_tree = mat.node_tree
@@ -281,33 +265,33 @@ def getMaterial(main_coll, mat, srtMat):
     links = n_tree.links
     
     # Color Sets
-    srtMat["VAmbientColor"] = dict(zip(["x", "y", "z"], list(nodes["Ambient Color"].outputs['Color'].default_value)[:-1]))
-    srtMat["VDiffuseColor"] = dict(zip(["x", "y", "z"], list(nodes["Diffuse Color"].outputs['Color'].default_value)[:-1]))
-    srtMat["VSpecularColor"] = dict(zip(["x", "y", "z"], list(nodes["Specular Color"].outputs['Color'].default_value)[:-1]))
-    srtMat["VTransmissionColor"] = dict(zip(["x", "y", "z"], list(nodes["Transmission Color"].outputs['Color'].default_value)[:-1]))
+    srtRender["VAmbientColor"] = dict(zip(["x", "y", "z"], list(nodes["Ambient Color"].outputs['Color'].default_value)[:-1]))
+    srtRender["VDiffuseColor"] = dict(zip(["x", "y", "z"], list(nodes["Diffuse Color"].outputs['Color'].default_value)[:-1]))
+    srtRender["VSpecularColor"] = dict(zip(["x", "y", "z"], list(nodes["Specular Color"].outputs['Color'].default_value)[:-1]))
+    srtRender["VTransmissionColor"] = dict(zip(["x", "y", "z"], list(nodes["Transmission Color"].outputs['Color'].default_value)[:-1]))
     
-    srtMat["FAmbientContrastFactor"] = nodes['Ambient Contrast Factor'].outputs['Value'].default_value
-    srtMat["FDiffuseScalar"] = nodes['Diffuse Scalar'].outputs['Value'].default_value
-    srtMat["FShininess"] = nodes['Shininess'].outputs['Value'].default_value * 128
-    srtMat["FTransmissionShadowBrightness"] = nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
-    srtMat["FTransmissionViewDependency"] = nodes['Transmission View Dependency'].outputs['Value'].default_value
-    srtMat["FBranchSeamWeight"] = nodes['Branch Seam Weight'].outputs['Value'].default_value
-    srtMat["FAlphaScalar"] = nodes['Alpha Scalar'].outputs['Value'].default_value
+    srtRender["FAmbientContrastFactor"] = nodes['Ambient Contrast Factor'].outputs['Value'].default_value
+    srtRender["FDiffuseScalar"] = nodes['Diffuse Scalar'].outputs['Value'].default_value
+    srtRender["FShininess"] = nodes['Shininess'].outputs['Value'].default_value * 128
+    srtRender["FTransmissionShadowBrightness"] = nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
+    srtRender["FTransmissionViewDependency"] = nodes['Transmission View Dependency'].outputs['Value'].default_value
+    srtRender["FBranchSeamWeight"] = nodes['Branch Seam Weight'].outputs['Value'].default_value
+    srtRender["FAlphaScalar"] = nodes['Alpha Scalar'].outputs['Value'].default_value
     
     if nodes["Ambient Occlusion Mix"].inputs[7].links:
-        srtMat["BAmbientOcclusion"] = True
+        srtRender["BAmbientOcclusion"] = True
     else:
-        srtMat["BAmbientOcclusion"] = False
+        srtRender["BAmbientOcclusion"] = False
         
     if nodes['Alpha Scalar Mix'].inputs[6].links:
-        srtMat["BDiffuseAlphaMaskIsOpaque"] = False
+        srtRender["BDiffuseAlphaMaskIsOpaque"] = False
     else:
-        srtMat["BDiffuseAlphaMaskIsOpaque"] = True
+        srtRender["BDiffuseAlphaMaskIsOpaque"] = True
     
     if mat.shadow_method != 'NONE':
-        srtMat["BCastsShadows"] = True
+        srtRender["BCastsShadows"] = True
     else:
-        srtMat["BCastsShadows"] = False
+        srtRender["BCastsShadows"] = False
     
     #Textures
     texture_names = []
@@ -318,28 +302,28 @@ def getMaterial(main_coll, mat, srtMat):
     spec_tex = nodes["Specular Texture"].image
     if diff_tex:
         diff_tex_name = diff_tex.name
-        srtMat["ApTextures"][0]["Val"] = diff_tex_name
+        srtRender["ApTextures"][0] = diff_tex_name
         texture_names.append(diff_tex_name)
         
     if norm_tex:
         norm_tex_name = norm_tex.name
-        srtMat["ApTextures"][1]["Val"] = norm_tex_name
+        srtRender["ApTextures"][1] = norm_tex_name
         texture_names.append(norm_tex_name)
             
     if det_tex:
         det_tex_name = det_tex.name
-        srtMat["ApTextures"][2]["Val"] = det_tex_name
+        srtRender["ApTextures"][2] = det_tex_name
         texture_names.append(det_tex_name)
         
     if det_norm_tex:
         det_norm_tex_name = det_norm_tex.name
-        srtMat["ApTextures"][3]["Val"] = det_norm_tex_name
+        srtRender["ApTextures"][3] = det_norm_tex_name
         texture_names.append(det_norm_tex_name)
         
     if spec_tex:
         spec_tex_name = spec_tex.name
-        srtMat["ApTextures"][4]["Val"] = spec_tex_name
-        srtMat["ApTextures"][5]["Val"] = spec_tex_name
+        srtRender["ApTextures"][4] = spec_tex_name
+        srtRender["ApTextures"][5] = spec_tex_name
         texture_names.append(spec_tex_name)
         
     return texture_names

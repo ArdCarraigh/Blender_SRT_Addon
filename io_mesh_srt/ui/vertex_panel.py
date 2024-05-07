@@ -16,7 +16,7 @@ class SpeedTreeVertexPropertiesPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'vertex':
             
             layout = self.layout
@@ -53,7 +53,7 @@ class SpeedTreeFacingLeavesPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'vertex':
             
             layout = self.layout
@@ -95,7 +95,7 @@ class SpeedTreeLeavesPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'vertex':
             
             layout = self.layout
@@ -126,7 +126,7 @@ def updateVertexLodPosition(self, context):
         if mesh["SpeedTreeTag"] == 1:
             bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
             count = len(mesh.vertices)
-            sel = np.zeros(count, dtype=np.bool)
+            sel = np.zeros(count, dtype=bool)
             mesh.vertices.foreach_get('select', sel)
             v_index = list(sel).index(True)
             mesh.attributes['vertexLodPosition'].data[v_index].vector = self.vertexLodPosition
@@ -139,7 +139,7 @@ def updateLeafCorner(self, context):
         if mesh["SpeedTreeTag"] == 1:
             bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
             count = len(mesh.vertices)
-            sel = np.zeros(count, dtype=np.bool)
+            sel = np.zeros(count, dtype=bool)
             mesh.vertices.foreach_get('select', sel)
             v_index = list(sel).index(True)
             mesh.attributes['leafCardCorner'].data[v_index].vector = self.leafCardCornerTransform
@@ -151,7 +151,7 @@ def updateLeafCardScalar(self, context):
         if mesh["SpeedTreeTag"] == 1:
             bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
             count = len(mesh.vertices)
-            sel = np.zeros(count, dtype=np.bool)
+            sel = np.zeros(count, dtype=bool)
             mesh.vertices.foreach_get('select', sel)
             v_index = list(sel).index(True)
             mesh.attributes['leafCardLodScalar'].data[v_index].value = self.leafCardLodScalar
@@ -163,7 +163,7 @@ def updateLeafAnchorPoint(self, context):
         if mesh["SpeedTreeTag"] == 1:
             bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
             count = len(mesh.vertices)
-            sel = np.zeros(count, dtype=np.bool)
+            sel = np.zeros(count, dtype=bool)
             mesh.vertices.foreach_get('select', sel)
             v_index = list(sel).index(True)
             mesh.attributes['leafAnchorPoint'].data[v_index].vector = self.leafAnchorPoint

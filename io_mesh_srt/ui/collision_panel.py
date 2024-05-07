@@ -45,7 +45,13 @@ class RemoveSRTCollisionObject(Operator):
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
         bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
-        remove_srt_sphere(context, bpy.context.window_manager.SpeedTreeCollisionsIndex)
+        wm = bpy.context.window_manager.speedtree
+        index = wm.SpeedTreeCollisionsIndex
+        remove_srt_sphere(context, index)
+        if not index:
+            wm.SpeedTreeCollisionsIndex = 0
+        elif index > 0:
+            wm.SpeedTreeCollisionsIndex = index - 1  
         return {'FINISHED'}
     
 class AddSRTSphereConnection(Operator):
@@ -59,7 +65,7 @@ class AddSRTSphereConnection(Operator):
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
         bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
-        wm = bpy.context.window_manager
+        wm = bpy.context.window_manager.speedtree
         add_srt_connection(context, [wm.collisionObject1, wm.collisionObject2])
         wm.collisionObject1 = None
         wm.collisionObject2 = None
@@ -95,7 +101,7 @@ class SpeedTreeCollisionPanel(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
     
     def draw(self, context):
-        wm = context.window_manager
+        wm = context.window_manager.speedtree
         if wm.SpeedTreeSubPanel == 'collision':
             
             layout = self.layout

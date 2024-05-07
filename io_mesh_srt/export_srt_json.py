@@ -6,11 +6,12 @@ import json
 import os
 import re
 import numpy as np
+import subprocess
 from copy import deepcopy
-from io_mesh_srt.utils import GetLoopDataPerVertex, GetCollection, JoinThem, getAttributesComponents, getVertexProperty, selectOnly, setAttribute, getSphere, TriangulateActiveMesh, SplitMesh, getMaterial, checkWeightPaint, updateVertexProperties
+from io_mesh_srt.utils import GetLoopDataPerVertex, GetCollection, JoinThem, getAttributesComponents, selectOnly, setAttribute, getSphere, TriangulateActiveMesh, SplitMesh, getMaterial, checkWeightPaint, updateVertexProperties
 
 def write_srt_json(context, filepath):
-    wm = bpy.context.window_manager
+    wm = bpy.context.window_manager.speedtree
     collision_coll = None
     bb_coll = None
     #horiz_coll = []
@@ -18,7 +19,7 @@ def write_srt_json(context, filepath):
     main_coll = GetCollection()
             
     if main_coll:
-        main_coll["EShaderGenerationMode"] = 'SHADER_GEN_MODE_UNIFIED_SHADERS'
+        main_coll["EShaderGenerationMode"] = 'UNIFIED_SHADERS'
         if wm.previewLod:
             wm.previewLod = False
         for col in main_coll.children:
@@ -37,14 +38,10 @@ def write_srt_json(context, filepath):
             srtMain = json.load(mainfile)
         with open("templates/collisionTemplate.json", 'r', encoding='utf-8') as collisionfile:
             srtCollisionTemplate = json.load(collisionfile)
-        with open("templates/lodTemplate.json", 'r', encoding='utf-8') as lodfile:
-            srtLodTemplate = json.load(lodfile)
         with open("templates/drawTemplate.json", 'r', encoding='utf-8') as drawfile:
             srtDrawTemplate = json.load(drawfile)
-        with open("templates/vertTemplate.json", 'r', encoding='utf-8') as vertfile:
-            srtVertTemplate = json.load(vertfile)
-        with open("templates/depthTemplate.json", 'r', encoding='utf-8') as depthfile:
-            srtDepthTemplate = json.load(depthfile)
+        with open("templates/renderTemplate.json", 'r', encoding='utf-8') as renderfile:
+            srtRenderTemplate = json.load(renderfile)
             
         # Get and Write Collisions #CollisionObjects
         if collision_coll and collision_coll.objects:
@@ -75,8 +72,6 @@ def write_srt_json(context, filepath):
                     JoinThem(coll_meshes)
                     
                 srtMain["CollisionObjects"].append(srtCollision)
-        else:
-            srtMain.pop("CollisionObjects")
             
         # Get and Write Vertical Billboards #VerticalBillboards
         if bb_coll:
@@ -103,14 +98,11 @@ def write_srt_json(context, filepath):
                     billboard_uv_y = uv_array[1::2]
                     index = np.argmin(billboard_uv_x + billboard_uv_y)
                     if index == 4:
-                        billboard_rotated.append(1)
+                        billboard_rotated.append(True)
                     else:
-                        billboard_rotated.append(0)
+                        billboard_rotated.append(False)
                     billboard_uv_y = 1 - billboard_uv_y
-                    billboard_uvs.append(billboard_uv_x[0])
-                    billboard_uvs.append(billboard_uv_y[0])
-                    billboard_uvs.append(billboard_uv_x[2] - billboard_uv_x[0])
-                    billboard_uvs.append((billboard_uv_y[2]) - (billboard_uv_y[0]))
+                    billboard_uvs.append({"x" : billboard_uv_x[0], "y" : billboard_uv_y[0], "z" : billboard_uv_x[2] - billboard_uv_x[0], "w" : billboard_uv_y[2] - billboard_uv_y[0]})
             
             if cutout:            
                 cut_obj = bb_coll.objects[cutout[0]]
@@ -123,7 +115,7 @@ def write_srt_json(context, filepath):
                 cut.attributes["position"].data.foreach_get("vector", cutout_vert_array)
                 cutout_vert_array[::3] = (cutout_vert_array[::3] - -bb_width * 0.5) / bb_width
                 cutout_vert_array[2::3] = (cutout_vert_array[2::3] - bb_bottom) / (bb_top - bb_bottom)
-                billboard_cutout_verts = cutout_vert_array.reshape(-1,3)[:,[0,2]].flatten().tolist()
+                billboard_cutout_verts = [dict(zip(["x", "y"], x)) for x in cutout_vert_array.reshape(-1,3)[:,[0,2]]]
                 n_indices = len(cut.polygons) * 3
                 billboard_cutout_indices = np.zeros(n_indices, dtype = int)
                 cut.attributes[".corner_vert"].data.foreach_get("value", billboard_cutout_indices)
@@ -172,11 +164,11 @@ def write_srt_json(context, filepath):
             
             # Deal with Billboard Specificities
             srtBBMat["BUsedAsGrass"] = False
-            srtBBMat["ELodMethod"] = "LOD_METHOD_POP"
-            srtBBMat["EShaderGenerationMode"] = "SHADER_GEN_MODE_STANDARD"
-            srtBBMat["EDetailLayer"] = "EFFECT_OFF"
-            srtBBMat["EBranchSeamSmoothing"] = "EFFECT_OFF"
-            srtBBMat["EWindLod"] = "WIND_LOD_NONE"
+            srtBBMat["ELodMethod"] = "POP"
+            srtBBMat["EShaderGenerationMode"] = "STANDARD"
+            srtBBMat["EDetailLayer"] = "OFF"
+            srtBBMat["EBranchSeamSmoothing"] = "OFF"
+            srtBBMat["EWindLod"] = "NONE"
             srtBBMat["BBranchesPresent"] = False
             srtBBMat["BFrondsPresent"] = False
             srtBBMat["BLeavesPresent"] = False
@@ -187,22 +179,21 @@ def write_srt_json(context, filepath):
                         
             #Write ABillboardRenderStateShadow
             srtMain["Geometry"]["ABillboardRenderStateShadow"] = deepcopy(srtBBMat)
-            for i, texture in enumerate(srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"]):
+            for i,_ in enumerate(srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"]):
                 if i:
-                    texture["Val"] = ""
-            srtMain["Geometry"]["ABillboardRenderStateShadow"]["ERenderPass"] = "RENDER_PASS_SHADOW_CAST"
-            srtMain["Geometry"]["ABillboardRenderStateShadow"]["BFadeToBillboard"] = False  
+                    srtMain["Geometry"]["ABillboardRenderStateShadow"]["ApTextures"][i] = ""
+            srtMain["Geometry"]["ABillboardRenderStateShadow"]["ERenderPass"] = "SHADOW_CAST"
+            srtMain["Geometry"]["ABillboardRenderStateShadow"]["BFadeToBillboard"] = False
             
         #Get and Write Meshes#
         lodsNum = 0
         mesh_index = 0
-        meshesNum = 0
         textures_names = []
         if lod_colls:
             for col in lod_colls:
                 objects = col.objects
                 if objects:
-                    srtLod = deepcopy(srtLodTemplate)
+                    srtLod = {"PDrawCalls":[]}
                     # Get lodsNum
                     lodsNum += 1
                     for mesh in objects:
@@ -215,26 +206,27 @@ def write_srt_json(context, filepath):
                         
                     meshes = []
                     for mesh in objects:
-                        srtDraw = deepcopy(srtDrawTemplate)
+                        meshes.append(mesh)
                         mesh_data = mesh.data
                         mat = mesh_data.materials[0]
-                        
-                        # Deal with Grass
-                        if main_coll["BUsedAsGrass"]:
-                            mat["BBranchesPresent"] = False
-                            mat["BFrondsPresent"] = True
-                            mat["BLeavesPresent"] = True
-                            mat["BFacingLeavesPresent"] = True
-                            mat["BRigidMeshesPresent"] = True
-                            
-                        # Compute Normals and Tangents
-                        mesh_data.uv_layers.active = mesh_data.uv_layers["DiffuseUV"]
-                        mesh_data.calc_normals_split()
-                        mesh_data.calc_tangents()
-                            
                         if not mat["BRigidMeshesPresent"] or (mat["BFacingLeavesPresent"] and mat["BRigidMeshesPresent"]): #Dont export pure rigid meshes because not supported by RedEngine
-                            meshes.append(mesh)
-                            
+                            srtRender = deepcopy(srtRenderTemplate)
+                            srtDraw = deepcopy(srtDrawTemplate)
+                            srtDraw["RenderStateIdx"] = mesh_index
+                            mesh_index += 1
+
+                            # Deal with Grass
+                            if main_coll["BUsedAsGrass"]:
+                                mat["BBranchesPresent"] = False
+                                mat["BFrondsPresent"] = True
+                                mat["BLeavesPresent"] = True
+                                mat["BFacingLeavesPresent"] = True
+                                mat["BRigidMeshesPresent"] = True
+                                
+                            # Compute Tangents
+                            mesh_data.uv_layers.active = mesh_data.uv_layers["DiffuseUV"]
+                            mesh_data.calc_tangents()
+
                             # Faces
                             n_indices = len(mesh_data.polygons) * 3
                             faces = np.zeros(n_indices, dtype = int)
@@ -271,10 +263,10 @@ def write_srt_json(context, filepath):
                             leaf_anchor_points = leaf_anchor_points.reshape(-1,3).tolist()
                             
                             # Normals
-                            normals = GetLoopDataPerVertex(mesh_data, "NORMAL")
+                            normals = np.round((np.array(GetLoopDataPerVertex(mesh_data, "NORMAL")) / 2 + 0.5) * 255).tolist()
                             
                             # Tangents
-                            tangents = GetLoopDataPerVertex(mesh_data, "TANGENT")
+                            tangents = np.round((np.array(GetLoopDataPerVertex(mesh_data, "TANGENT")) / 2 + 0.5) * 255).tolist()
                             
                             # Diffuse UV
                             uvs_diff = GetLoopDataPerVertex(mesh_data, "UV", "DiffuseUV")
@@ -325,409 +317,370 @@ def write_srt_json(context, filepath):
                                         case "WindFlag":
                                             wind_flags.append(g.weight)
                                         case "AmbientOcclusion":
-                                            ambients.append(1 - g.weight)
+                                            ambients.append(round((1 - g.weight) * 255))
                                         case "SeamBlending":
                                             seam_blending.append(1 - g.weight)
+                                            
+                            # Assemble different data types
+                            branches_seam_diff = np.c_[branches_seam_diff, seam_blending].tolist()
+                            wind_branch = np.c_[wind_weight1, wind_normal1, wind_weight2, wind_normal2].tolist()
+                            wind_extra = np.c_[wind_extra1, wind_extra2, wind_extra3].tolist()
                                         
                             # Geom Types for GRASS
                             if main_coll["BUsedAsGrass"]:
                                 geom_types = np.ones(n_verts).tolist()
                                 
-                            # Write data per vertex
+                            # Write Mesh Data
+                            srtDraw["IndexData"] = faces
+                            vert_data = srtDraw["VertexData"]
+                            vert_data["count"] = n_verts
+                            
                             properties = []
                             components = []
                             offsets = []
                             formats = []
                             attributes = []
                             num_attrib = 0
-                            attrib_name0 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name1 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name2 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name3 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name4 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name5 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name6 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name7 = "VERTEX_ATTRIB_UNASSIGNED"
-                            attrib_name8 = "VERTEX_ATTRIB_UNASSIGNED"
-                            for i in range(n_verts):
-                                srtVert = deepcopy(srtVertTemplate)
-                                offset = 0
-                                prop_count = 0
-                                
-                                # Vert position
-                                offset, new_offsets, prop_count = getVertexProperty(srtVert, 0, verts[i], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_POSITION", offset, [0,2,4], prop_count)
-                                if not i:
-                                    updateVertexProperties("VERTEX_PROPERTY_POSITION", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                    attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                    num_attrib += 1
-                                    attributes.extend([attrib_name0, attrib_name0, attrib_name0])
-                                    
-                                # Lod position
-                                if not mat["BFacingLeavesPresent"] or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 3, verts_lod[i], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_LOD_POSITION", offset, [0,6,8], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_LOD_POSITION", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
-                                        attributes.extend([attrib_name0, attrib_name1, attrib_name1])
-                                    
-                                # Leaf Card Corner
-                                if mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 5, leaf_card_corners[i], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_LEAF_CARD_CORNER", offset, [0,6,8], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_LEAF_CARD_CORNER", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if attrib_name0 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name0 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        if attrib_name1 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.extend([attrib_name0, attrib_name1, attrib_name1])
-                                    
-                                # Diffuse UV #Sneaky Special Case
-                                srtVert["VertexProperties"][1]["ValueCount"] =  2
-                                srtVert["VertexProperties"][1]["FloatValues"] =  uvs_diff[i]
-                                srtVert["VertexProperties"][1]["PropertyFormat"] = "VERTEX_FORMAT_HALF_FLOAT"
-                                srtVert["VertexProperties"][1]["ValueOffsets"] = [offset-4, offset -2]
-                                if not i:
-                                    properties [-2:-2] = ["VERTEX_PROPERTY_DIFFUSE_TEXCOORDS", "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS"]
-                                    components [-2:-2] = ["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_Y"]
-                                    offsets [-2:-2] = [offset-4, offset -2]
-                                    formats [-2:-2] = ["VERTEX_FORMAT_HALF_FLOAT", "VERTEX_FORMAT_HALF_FLOAT"]
-                                    if attrib_name1 == "VERTEX_ATTRIB_UNASSIGNED":
-                                        attrib_name1 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
-                                    attributes [-2:-2] = [attrib_name1, attrib_name1]
-                                offset += 4
-                                prop_count += 2
-                                    
-                                # Geometry Type
-                                if (not mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]) or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 4, [geom_types[i]], 1, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT", offset, [0], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_GEOMETRY_TYPE_HINT", "VERTEX_FORMAT_HALF_FLOAT", 1, new_offsets, properties, components, offsets, formats)
-                                        attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        num_attrib += 1
-                                        attributes.append(attrib_name2)
-                                    
-                                ### Leaf Card Corner FOR GRASS ###
-                                if mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 5, leaf_card_corners[i], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_LEAF_CARD_CORNER", offset, [0,2,4], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_LEAF_CARD_CORNER", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.extend([attrib_name2, attrib_name2, attrib_name2])
-                                    
-                                # Leaf Card Lod Scalar
-                                if mat["BFacingLeavesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 6, [leaf_card_lod_scalars[i]], 1, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR", offset, [0], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR", "VERTEX_FORMAT_HALF_FLOAT", 1, new_offsets, properties, components, offsets, formats)
-                                        if mat["BLeavesPresent"]: #Exception for Grass
-                                            if attrib_name3 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.append(attrib_name3)
-                                        else:
-                                            if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.append(attrib_name2)
-                                    
-                                ### Wind Branch Data FOR LEAVES ###
-                                if not mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 8, [wind_weight1[i], wind_normal1[i], wind_weight2[i], wind_normal2[i]], 4, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_WIND_BRANCH_DATA", offset, [0,2,4,6], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_WIND_BRANCH_DATA", "VERTEX_FORMAT_HALF_FLOAT", 4, new_offsets, properties, components, offsets, formats)
-                                        attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name2, attrib_name2, attrib_name2, attrib_name2])
-                                        num_attrib += 1
-                                    
-                                # Wind Extra Data
-                                if not mat["BBranchesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 9, [wind_extra1[i], wind_extra2[i], wind_extra3[i]], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_WIND_EXTRA_DATA", offset, [0,2,4], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_WIND_EXTRA_DATA", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if mat["BLeavesPresent"]: #Exception for Grass and Leaves
-                                            if attrib_name3 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.extend([attrib_name3, attrib_name3, attrib_name3])
-                                        else:
-                                            if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.extend([attrib_name2, attrib_name2, attrib_name2])
-                                    
-                                # Branch Seam Diffuse
-                                if mat["BBranchesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 13, [branches_seam_diff[i][0], branches_seam_diff[i][1], seam_blending[i]], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE", offset, [0,2,4], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if attrib_name2 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name2 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.extend([attrib_name2, attrib_name2, attrib_name2])
-                                    
-                                # Wind Branch Data
-                                if not mat["BLeavesPresent"] or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 8, [wind_weight1[i], wind_normal1[i], wind_weight2[i], wind_normal2[i]], 4, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_WIND_BRANCH_DATA", offset, [0,2,4,6], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_WIND_BRANCH_DATA", "VERTEX_FORMAT_HALF_FLOAT", 4, new_offsets, properties, components, offsets, formats)
-                                        if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
-                                            attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            attributes.extend([attrib_name4, attrib_name4, attrib_name4, attrib_name4])
-                                            num_attrib += 1
-                                        else:
-                                            attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            attributes.extend([attrib_name3, attrib_name3, attrib_name3, attrib_name3])
-                                            num_attrib += 1
-                                    
-                                # Branch Seam Detail
-                                if mat["BBranchesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 14, branches_seam_det[i], 2, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_BRANCH_SEAM_DETAIL", offset, [0,2], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_BRANCH_SEAM_DETAIL", "VERTEX_FORMAT_HALF_FLOAT", 2, new_offsets, properties, components, offsets, formats)
-                                        attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name4, attrib_name4])
-                                        num_attrib += 1
-                                    
-                                # Detail UV
-                                if mat["BBranchesPresent"]:
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 15, uvs_det[i], 2, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_DETAIL_TEXCOORDS", offset, [0,2], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_DETAIL_TEXCOORDS", "VERTEX_FORMAT_HALF_FLOAT", 2, new_offsets, properties, components, offsets, formats)
-                                        if attrib_name4 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.extend([attrib_name4, attrib_name4])
-                                    
-                                # Wind Flags
-                                if (mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]) or (not mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 10, [wind_flags[i]], 1, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_WIND_FLAGS", offset, [0], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_WIND_FLAGS", "VERTEX_FORMAT_HALF_FLOAT", 1, new_offsets, properties, components, offsets, formats)
-                                        if mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]: # Exception for Leaves
-                                            if attrib_name3 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name3 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.append(attrib_name3)
-                                        elif mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]: # Exception for Facing Leaves
-                                            if attrib_name4 == "VERTEX_ATTRIB_UNASSIGNED":
-                                                attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                                num_attrib += 1
-                                            attributes.append(attrib_name4)
-                                    
-                                # Leaf Anchor Point
-                                if (mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]) or (mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]):
-                                    offset, new_offsets, prop_count = getVertexProperty(srtVert, 11, leaf_anchor_points[i], 3, "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_PROPERTY_LEAF_ANCHOR_POINT", offset, [0,2,4], prop_count)
-                                    if not i:
-                                        updateVertexProperties("VERTEX_PROPERTY_LEAF_ANCHOR_POINT", "VERTEX_FORMAT_HALF_FLOAT", 3, new_offsets, properties, components, offsets, formats)
-                                        if mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]: #Exception for Leaves
-                                            attrib_name4 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            attributes.extend([attrib_name4, attrib_name4, attrib_name4])
-                                            num_attrib += 1
-                                        elif mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
-                                            attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            attributes.extend([attrib_name5, attrib_name5, attrib_name5])
-                                            num_attrib += 1
-                                    
-                                # half float padding
-                                if prop_count/4 != int(prop_count/4):
-                                    if (prop_count/4) % 1 == 0.25:
-                                        if not i:
-                                            properties.extend(["VERTEX_PROPERTY_PAD", "VERTEX_PROPERTY_UNASSIGNED","VERTEX_PROPERTY_UNASSIGNED"])
-                                            components.extend(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_UNASSIGNED", "VERTEX_COMPONENT_UNASSIGNED"])
-                                            offsets.extend([offset, 0, 0])
-                                            formats.extend(["VERTEX_FORMAT_HALF_FLOAT", "VERTEX_FORMAT_HALF_FLOAT", "VERTEX_FORMAT_HALF_FLOAT"])
-                                            attributes.extend(["VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED"])
-                                        offset += 2
-                                        prop_count += 1
-                                    elif (prop_count/4) % 1 == 0.5:
-                                        if not i:
-                                            properties.extend(["VERTEX_PROPERTY_UNASSIGNED", "VERTEX_PROPERTY_UNASSIGNED"])
-                                            components.extend(["VERTEX_COMPONENT_UNASSIGNED", "VERTEX_COMPONENT_UNASSIGNED"])
-                                            offsets.extend([0,0])
-                                            formats.extend(["VERTEX_FORMAT_HALF_FLOAT", "VERTEX_FORMAT_HALF_FLOAT"])
-                                            attributes.extend(["VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED"])
-                                    elif (prop_count/4) % 1 == 0.75:
-                                        if not i:
-                                            properties.append("VERTEX_PROPERTY_PAD")
-                                            components.append("VERTEX_COMPONENT_X")
-                                            offsets.append(offset)
-                                            formats.append("VERTEX_FORMAT_HALF_FLOAT")
-                                            attributes.append("VERTEX_ATTRIB_UNASSIGNED")
-                                        offset += 2
-                                        prop_count += 1
-                                        
-                                # Normals
-                                offset, new_offsets, prop_count = getVertexProperty(srtVert, 2, normals[i], 3, "VERTEX_FORMAT_BYTE", "VERTEX_PROPERTY_NORMAL", offset, [0,1,2], prop_count)
-                                if not i:
-                                    updateVertexProperties("VERTEX_PROPERTY_NORMAL", "VERTEX_FORMAT_BYTE", 3, new_offsets, properties, components, offsets, formats)
-                                    if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
-                                        attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name6, attrib_name6, attrib_name6])
-                                        num_attrib += 1
-                                    else:
-                                        attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name5, attrib_name5, attrib_name5])
-                                        num_attrib += 1
-                                    
-                                # Ambient Occlusion
-                                offset, new_offsets, prop_count = getVertexProperty(srtVert, 18, [ambients[i]], 1, "VERTEX_FORMAT_BYTE", "VERTEX_PROPERTY_AMBIENT_OCCLUSION", offset, [0], prop_count)
-                                srtVert["VertexProperties"][18]["ByteValues"] =  [int(ambients[i] * 255)]
-                                srtVert["VertexProperties"][18]["FloatValues"] = [] #Faster to attribute a new value than to have an "if" in the function
-                                if not i:
-                                    updateVertexProperties("VERTEX_PROPERTY_AMBIENT_OCCLUSION", "VERTEX_FORMAT_BYTE", 1, new_offsets, properties, components, offsets, formats)
-                                    if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
-                                        if attrib_name6 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.append(attrib_name6)
-                                    else:
-                                        if attrib_name5 == "VERTEX_ATTRIB_UNASSIGNED":
-                                            attrib_name5 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                            num_attrib += 1
-                                        attributes.append(attrib_name5)
-                                    
-                                # Tangents
-                                offset, new_offsets, prop_count = getVertexProperty(srtVert, 16, tangents[i], 3, "VERTEX_FORMAT_BYTE", "VERTEX_PROPERTY_TANGENT", offset, [0,1,2], prop_count)
-                                if not i:
-                                    updateVertexProperties("VERTEX_PROPERTY_TANGENT", "VERTEX_FORMAT_BYTE", 3, new_offsets, properties, components, offsets, formats)
-                                    if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
-                                        attrib_name7 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name7, attrib_name7, attrib_name7])
-                                        num_attrib += 1
-                                    else:
-                                        attrib_name6 = "VERTEX_ATTRIB_"+str(num_attrib)
-                                        attributes.extend([attrib_name6, attrib_name6, attrib_name6])
-                                        num_attrib += 1
-                                    
-                                # byte padding
-                                if prop_count/4 != int(prop_count/4):
-                                    if (prop_count/4) % 1 == 0.25:
-                                        if not i:
-                                            properties.extend(["VERTEX_PROPERTY_PAD", "VERTEX_PROPERTY_UNASSIGNED","VERTEX_PROPERTY_UNASSIGNED"])
-                                            components.extend(["VERTEX_COMPONENT_X", "VERTEX_COMPONENT_UNASSIGNED", "VERTEX_COMPONENT_UNASSIGNED"])
-                                            offsets.extend([offset, 0, 0])
-                                            formats.extend(["VERTEX_FORMAT_BYTE", "VERTEX_FORMAT_BYTE", "VERTEX_FORMAT_BYTE"])
-                                            attributes.extend(["VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED"])
-                                        offset += 1
-                                        prop_count += 1
-                                    elif (prop_count/4) % 1 == 0.5:
-                                        if not i:
-                                            properties.extend(["VERTEX_PROPERTY_UNASSIGNED", "VERTEX_PROPERTY_UNASSIGNED"])
-                                            components.extend(["VERTEX_COMPONENT_UNASSIGNED","VERTEX_COMPONENT_UNASSIGNED"])
-                                            offsets.extend([0,0])
-                                            formats.extend(["VERTEX_FORMAT_BYTE", "VERTEX_FORMAT_BYTE"])
-                                            attributes.extend(["VERTEX_ATTRIB_UNASSIGNED", "VERTEX_ATTRIB_UNASSIGNED"])
-                                    elif (prop_count/4) % 1 == 0.75:
-                                        if not i:
-                                            properties.append("VERTEX_PROPERTY_PAD")
-                                            components.append("VERTEX_COMPONENT_X")
-                                            offsets.append(offset)
-                                            formats.append("VERTEX_FORMAT_BYTE")
-                                            attributes.append("VERTEX_ATTRIB_UNASSIGNED")
-                                        offset += 1
-                                        prop_count += 1
-                                
-                                if not i:
-                                    offset_final = offset
-                                    
-                                while len(properties) < 64:
-                                    properties.append("VERTEX_PROPERTY_UNASSIGNED")
-                                    components.append("VERTEX_COMPONENT_UNASSIGNED")
-                                    offsets.append(0)
-                                    formats.append("VERTEX_FORMAT_UNASSIGNED")
-                                    attributes.append("VERTEX_ATTRIB_UNASSIGNED")
-                                
-                                srtDraw["PVertexData"].append(srtVert)
+                            offset = 0
+                            attrib_name0 = None
+                            attrib_name1 = None
+                            attrib_name2 = None
+                            attrib_name3 = None
+                            attrib_name4 = None
+                            attrib_name5 = None
+                            attrib_name6 = None
+                            attrib_name7 = None
+                            attrib_name8 = None
                             
-                            # Write data per mesh
-                            srtDraw["NNumVertices"] = n_verts
-                            srtDraw["NRenderStateIndex"] = mesh_index
-                            mesh_index += 1
-                            srtDraw["NNumIndices"] = n_indices
-                            srtDraw["PIndexData"] = faces
-                            srtMat = srtDraw["PRenderState"]
-                            srtMat["SVertexDecl"]["UiVertexSize"] = offset_final
+                            #Vert position
+                            vert_data["pos"] = verts
+                            offset = updateVertexProperties("POSITION", "HALF_FLOAT", 3, offset, [0,2,4], properties, components, offsets, formats)
+                            attrib_name0 = "ATTRIBUE"+str(num_attrib)
+                            num_attrib += 1
+                            attributes.extend([attrib_name0, attrib_name0, attrib_name0])
+                            
+                            # Lod position
+                            if not mat["BFacingLeavesPresent"] or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
+                                vert_data["lod_pos"] = verts_lod
+                                offset = updateVertexProperties("LOD_POSITION", "HALF_FLOAT", 3, offset, [0,6,8], properties, components, offsets, formats)
+                                if attrib_name0 is None:
+                                    attrib_name0 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attrib_name1 = "ATTRIBUE"+str(num_attrib)
+                                num_attrib += 1
+                                attributes.extend([attrib_name0, attrib_name1, attrib_name1])
+                                
+                            # Leaf Card Corner
+                            if mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]:
+                                vert_data["leaf_card_corner"] = leaf_card_corners
+                                offset = updateVertexProperties("LEAF_CARD_CORNER", "HALF_FLOAT", 3, offset, [0,6,8], properties, components, offsets, formats)
+                                if attrib_name0 is None:
+                                    attrib_name0 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                if attrib_name1 is None:
+                                    attrib_name1 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.extend([attrib_name0, attrib_name1, attrib_name1])
+                                
+                            # Diffuse UV #Sneaky Special Case
+                            vert_data["diffuse"] =  uvs_diff   
+                            properties [-2:-2] = ["DIFFUSE_TEXTURE_COORDINATES", "DIFFUSE_TEXTURE_COORDINATES"]
+                            components [-2:-2] = ["X", "Y"]
+                            offsets [-2:-2] = [offset-4, offset -2]
+                            formats [-2:-2] = ["HALF_FLOAT", "HALF_FLOAT"]
+                            if attrib_name1 is None:
+                                attrib_name1 = "ATTRIBUE"+str(num_attrib)
+                                num_attrib += 1
+                            attributes [-2:-2] = [attrib_name1, attrib_name1]
+                            offset += 4
+                                
+                            # Geometry Type
+                            if (not mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]) or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
+                                vert_data["geometry_type_hint"] = geom_types
+                                offset = updateVertexProperties("GEOMETRY_TYPE_HINT", "HALF_FLOAT", 1, offset, [0], properties, components, offsets, formats)
+                                attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                num_attrib += 1
+                                attributes.append(attrib_name2)
+                                
+                            ### Leaf Card Corner FOR GRASS ###
+                            if mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]:
+                                vert_data["leaf_card_corner"] = leaf_card_corners
+                                offset = updateVertexProperties("LEAF_CARD_CORNER", "HALF_FLOAT", 3, offset, [0,2,4], properties, components, offsets, formats)
+                                if attrib_name2 is None:
+                                    attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.extend([attrib_name2, attrib_name2, attrib_name2])
+                                
+                            # Leaf Card Lod Scalar
+                            if mat["BFacingLeavesPresent"]:
+                                vert_data["leaf_card_lod_scalar"] = leaf_card_lod_scalars
+                                offset = updateVertexProperties("LEAF_CARD_LOD_SCALAR", "HALF_FLOAT", 1, offset, [0], properties, components, offsets, formats)
+                                if mat["BLeavesPresent"]: #Exception for Grass
+                                    if attrib_name3 is None:
+                                        attrib_name3 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.append(attrib_name3)
+                                else:
+                                    if attrib_name2 is None:
+                                        attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.append(attrib_name2)
+                                
+                            ### Wind Branch Data FOR LEAVES ###
+                            if not mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]:
+                                vert_data["wind_branch"] = wind_branch
+                                offset = updateVertexProperties("WIND_BRANCH_DATA", "HALF_FLOAT", 4, offset, [0,2,4,6], properties, components, offsets, formats)
+                                attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name2, attrib_name2, attrib_name2, attrib_name2])
+                                num_attrib += 1
+                                
+                            # Wind Extra Data
+                            if not mat["BBranchesPresent"]:
+                                vert_data["wind_extra"] = wind_extra
+                                offset = updateVertexProperties("WIND_EXTRA_DATA", "HALF_FLOAT", 3, offset, [0,2,4], properties, components, offsets, formats)
+                                if mat["BLeavesPresent"]: #Exception for Grass and Leaves
+                                    if attrib_name3 is None:
+                                        attrib_name3 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.extend([attrib_name3, attrib_name3, attrib_name3])
+                                else:
+                                    if attrib_name2 is None:
+                                        attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.extend([attrib_name2, attrib_name2, attrib_name2])
+                                
+                            # Branch Seam Diffuse
+                            if mat["BBranchesPresent"]:
+                                vert_data["branch_seam_diffuse"] = branches_seam_diff
+                                offset = updateVertexProperties("BRANCH_SEAM_DIFFUSE", "HALF_FLOAT", 3, offset, [0,2,4], properties, components, offsets, formats)
+                                if attrib_name2 is None:
+                                    attrib_name2 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.extend([attrib_name2, attrib_name2, attrib_name2])
+                                
+                            # Wind Branch Data
+                            if not mat["BLeavesPresent"] or (mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
+                                vert_data["wind_branch"] = wind_branch
+                                offset = updateVertexProperties("WIND_BRANCH_DATA", "HALF_FLOAT", 4, offset, [0,2,4,6], properties, components, offsets, formats)
+                                if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
+                                    attrib_name4 = "ATTRIBUE"+str(num_attrib)
+                                    attributes.extend([attrib_name4, attrib_name4, attrib_name4, attrib_name4])
+                                    num_attrib += 1
+                                else:
+                                    attrib_name3 = "ATTRIBUE"+str(num_attrib)
+                                    attributes.extend([attrib_name3, attrib_name3, attrib_name3, attrib_name3])
+                                    num_attrib += 1
+                                
+                            # Branch Seam Detail
+                            if mat["BBranchesPresent"]:
+                                vert_data["branch_seam_detail"] = branches_seam_det
+                                offset = updateVertexProperties("BRANCH_SEAM_DETAIL", "HALF_FLOAT", 2, offset, [0,2], properties, components, offsets, formats)
+                                attrib_name4 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name4, attrib_name4])
+                                num_attrib += 1
+                                
+                            # Detail UV
+                            if mat["BBranchesPresent"]:
+                                vert_data["branch_detail_texture"] = uvs_det
+                                offset = updateVertexProperties("DETAIL_TEXTURE_COORDINATES", "HALF_FLOAT", 2, offset, [0,2], properties, components, offsets, formats)
+                                if attrib_name4 is None:
+                                    attrib_name4 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.extend([attrib_name4, attrib_name4])
+                                
+                            # Wind Flags
+                            if (mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]) or (not mat["BFacingLeavesPresent"] and mat["BLeavesPresent"]):
+                                vert_data["wind_flags"] = wind_flags
+                                offset = updateVertexProperties("WIND_FLAGS", "HALF_FLOAT", 1, offset, [0], properties, components, offsets, formats)
+                                if mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]: # Exception for Leaves
+                                    if attrib_name3 is None:
+                                        attrib_name3 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.append(attrib_name3)
+                                elif mat["BFacingLeavesPresent"] and not mat["BLeavesPresent"]: # Exception for Facing Leaves
+                                    if attrib_name4 is None:
+                                        attrib_name4 = "ATTRIBUE"+str(num_attrib)
+                                        num_attrib += 1
+                                    attributes.append(attrib_name4)
+                                
+                            # Leaf Anchor Point
+                            if (mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]) or (mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]):
+                                vert_data["leaf_anchor_point"] = leaf_anchor_points
+                                offset = updateVertexProperties("LEAF_ANCHOR_POINT", "HALF_FLOAT", 3, offset, [0,2,4], properties, components, offsets, formats)
+                                if mat["BLeavesPresent"] and not mat["BFacingLeavesPresent"]: #Exception for Leaves
+                                    attrib_name4 = "ATTRIBUE"+str(num_attrib)
+                                    attributes.extend([attrib_name4, attrib_name4, attrib_name4])
+                                    num_attrib += 1
+                                elif mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
+                                    attrib_name5 = "ATTRIBUE"+str(num_attrib)
+                                    attributes.extend([attrib_name5, attrib_name5, attrib_name5])
+                                    num_attrib += 1
+                                
+                            # half float padding
+                            prop_count = len(properties)
+                            if prop_count/4 != int(prop_count/4):
+                                if (prop_count/4) % 1 == 0.25:
+                                    properties.extend(["MISC_SEMANTIC", "UNASSIGNED","UNASSIGNED"])
+                                    components.extend(["X", "UNASSIGNED", "UNASSIGNED"])
+                                    offsets.extend([offset, 0, 0])
+                                    formats.extend(["HALF_FLOAT", "HALF_FLOAT", "HALF_FLOAT"])
+                                    attributes.extend(["UNASSIGNED", "UNASSIGNED", "UNASSIGNED"])
+                                    offset += 2
+                                elif (prop_count/4) % 1 == 0.5:
+                                    properties.extend(["UNASSIGNED", "UNASSIGNED"])
+                                    components.extend(["UNASSIGNED", "UNASSIGNED"])
+                                    offsets.extend([0,0])
+                                    formats.extend(["HALF_FLOAT", "HALF_FLOAT"])
+                                    attributes.extend(["UNASSIGNED", "UNASSIGNED"])
+                                elif (prop_count/4) % 1 == 0.75:
+                                    properties.append("MISC_SEMANTIC")
+                                    components.append("X")
+                                    offsets.append(offset)
+                                    formats.append("HALF_FLOAT")
+                                    attributes.append("UNASSIGNED")
+                                    offset += 2
+                                         
+                            # Normals
+                            vert_data["normals"] = normals
+                            offset = updateVertexProperties("NORMAL", "BYTE", 3, offset, [0,1,2], properties, components, offsets, formats)
+                            if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
+                                attrib_name6 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name6, attrib_name6, attrib_name6])
+                                num_attrib += 1
+                            else:
+                                attrib_name5 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name5, attrib_name5, attrib_name5])
+                                num_attrib += 1
+                                
+                            # Ambient Occlusion
+                            vert_data["ambient_occlusion"] = ambients
+                            offset = updateVertexProperties("AMBIENT_OCCLUSION", "BYTE", 1, offset, [0], properties, components, offsets, formats)
+                            if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
+                                if attrib_name6 is None:
+                                    attrib_name6 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.append(attrib_name6)
+                            else:
+                                if attrib_name5 is None:
+                                    attrib_name5 = "ATTRIBUE"+str(num_attrib)
+                                    num_attrib += 1
+                                attributes.append(attrib_name5)
+                                
+                            # Tangents
+                            vert_data["tangents"] = tangents
+                            offset = updateVertexProperties("TANGENT", "BYTE", 3, offset, [0,1,2], properties, components, offsets, formats)
+                            if mat["BLeavesPresent"] and mat["BFacingLeavesPresent"]: #Exception for Grass
+                                attrib_name7 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name7, attrib_name7, attrib_name7])
+                                num_attrib += 1
+                            else:
+                                attrib_name6 = "ATTRIBUE"+str(num_attrib)
+                                attributes.extend([attrib_name6, attrib_name6, attrib_name6])
+                                num_attrib += 1
+                                    
+                            # byte padding
+                            prop_count = len(properties)
+                            if prop_count/4 != int(prop_count/4):
+                                if (prop_count/4) % 1 == 0.25:
+                                    properties.extend(["MISC_SEMANTIC", "UNASSIGNED","UNASSIGNED"])
+                                    components.extend(["X", "UNASSIGNED", "UNASSIGNED"])
+                                    offsets.extend([offset, 0, 0])
+                                    formats.extend(["BYTE", "BYTE", "BYTE"])
+                                    attributes.extend(["UNASSIGNED", "UNASSIGNED", "UNASSIGNED"])
+                                    offset += 1
+                                elif (prop_count/4) % 1 == 0.5:
+                                    properties.extend(["UNASSIGNED", "UNASSIGNED"])
+                                    components.extend(["UNASSIGNED","UNASSIGNED"])
+                                    offsets.extend([0,0])
+                                    formats.extend(["BYTE", "BYTE"])
+                                    attributes.extend(["UNASSIGNED", "UNASSIGNED"])
+                                elif (prop_count/4) % 1 == 0.75:
+                                    properties.append("MISC_SEMANTIC")
+                                    components.append("X")
+                                    offsets.append(offset)
+                                    formats.append("BYTE")
+                                    attributes.append("UNASSIGNED")
+                                    offset += 1
+                                    
+                            while len(properties) < 64:
+                                properties.append("UNASSIGNED")
+                                components.append("UNASSIGNED")
+                                formats.append("UNASSIGNED")
+                                attributes.append("UNASSIGNED")
+                                offsets.append(0)
                             
                             # Write mesh material
-                            textures_names.extend(getMaterial(main_coll, mat, srtMat))
+                            srtRender["SVertexDecl"]["size"] = offset
+                            textures_names.extend(getMaterial(main_coll, mat, srtRender))
                             if col == lod_colls[-1] and bb_coll: #or horiz_coll:
-                                srtMat["BFadeToBillboard"] = True
+                                srtRender["BFadeToBillboard"] = True 
+                            if mat["BFacingLeavesPresent"]: #Ensure that Facing leaves have no culling method
+                                srtRender["EFaceCulling"] = "NONE"
                                 
                             # Properties
                             properties_reshaped = np.array(properties).reshape(-1,4).tolist()
                             components_reshaped = np.array(components).reshape(-1,4).tolist()
                             offsets_reshaped = np.array(offsets).reshape(-1,4).tolist()
                             formats_reshaped = np.array(formats).reshape(-1,4).tolist()
-                            for i, property in enumerate(srtMat["SVertexDecl"]["AsProperties"]):
-                                property["AeProperties"] = properties_reshaped[i]
-                                property["AePropertyComponents"] = components_reshaped[i]
-                                property["AuiVertexOffsets"] = offsets_reshaped[i]
-                                property["EFormat"] = formats_reshaped[i][-1]
+                            asProperties = srtRender["SVertexDecl"]["AsAttributes"]
+                            for i,_ in enumerate(asProperties):
+                                if properties_reshaped[i][0] != "UNASSIGNED":
+                                    asProperties[i] = {'format': formats_reshaped[i][-1], 'properties': properties_reshaped[i], 'components': components_reshaped[i], 'offsets': offsets_reshaped[i]}
                             
                             # Attributes
                             attributes_components = getAttributesComponents(attributes)
-                            srtAttributes = srtMat["SVertexDecl"]["AsAttributes"]
+                            srtAttributes = srtRender["SVertexDecl"]["AsProperties"]
                             # Attrib 0
-                            setAttribute(srtAttributes, 0, "VERTEX_PROPERTY_POSITION", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 0, "POSITION", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 1
-                            setAttribute(srtAttributes, 1, "VERTEX_PROPERTY_DIFFUSE_TEXCOORDS", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 1, "DIFFUSE_TEXTURE_COORDINATES", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 2
-                            setAttribute(srtAttributes, 2, "VERTEX_PROPERTY_NORMAL", "VERTEX_FORMAT_BYTE", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 2, "NORMAL", "BYTE", properties, components, offsets, attributes_components, attributes)
                             # Attrib 3
-                            setAttribute(srtAttributes, 3, "VERTEX_PROPERTY_LOD_POSITION", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 3, "LOD_POSITION", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 4
-                            setAttribute(srtAttributes, 4, "VERTEX_PROPERTY_GEOMETRY_TYPE_HINT", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 4, "GEOMETRY_TYPE_HINT", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 5
-                            setAttribute(srtAttributes, 5, "VERTEX_PROPERTY_LEAF_CARD_CORNER", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 5, "LEAF_CARD_CORNER", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 6
-                            setAttribute(srtAttributes, 6, "VERTEX_PROPERTY_LEAF_CARD_LOD_SCALAR", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 6, "LEAF_CARD_LOD_SCALAR", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 8
-                            setAttribute(srtAttributes, 8, "VERTEX_PROPERTY_WIND_BRANCH_DATA", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 8, "WIND_BRANCH_DATA", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 9
-                            setAttribute(srtAttributes, 9, "VERTEX_PROPERTY_WIND_EXTRA_DATA", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 9, "WIND_EXTRA_DATA", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 10
-                            setAttribute(srtAttributes, 10, "VERTEX_PROPERTY_WIND_FLAGS", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 10, "WIND_FLAGS", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 11
-                            setAttribute(srtAttributes, 11, "VERTEX_PROPERTY_LEAF_ANCHOR_POINT", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 11, "LEAF_ANCHOR_POINT", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 13
-                            setAttribute(srtAttributes, 13, "VERTEX_PROPERTY_BRANCH_SEAM_DIFFUSE", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 13, "BRANCH_SEAM_DIFFUSE", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 14
-                            setAttribute(srtAttributes, 14, "VERTEX_PROPERTY_BRANCH_SEAM_DETAIL", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 14, "BRANCH_SEAM_DETAIL", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 15
-                            setAttribute(srtAttributes, 15, "VERTEX_PROPERTY_DETAIL_TEXCOORDS", "VERTEX_FORMAT_HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 15, "DETAIL_TEXTURE_COORDINATES", "HALF_FLOAT", properties, components, offsets, attributes_components, attributes)
                             # Attrib 16
-                            setAttribute(srtAttributes, 16, "VERTEX_PROPERTY_TANGENT", "VERTEX_FORMAT_BYTE", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 16, "TANGENT", "BYTE", properties, components, offsets, attributes_components, attributes)
                             # Attrib 18
-                            setAttribute(srtAttributes, 18, "VERTEX_PROPERTY_AMBIENT_OCCLUSION", "VERTEX_FORMAT_BYTE", properties, components, offsets, attributes_components, attributes)
+                            setAttribute(srtAttributes, 18, "AMBIENT_OCCLUSION", "BYTE", properties, components, offsets, attributes_components, attributes)
                                 
                             srtLod["PDrawCalls"].append(srtDraw)
                             
                             # Write P3dRenderStateMain 
-                            srtMain["Geometry"]["P3dRenderStateMain"].append(srtMat)
-                            
-                            # Write P3dRenderStateDepth
-                            srtDepth = deepcopy(srtDepthTemplate)
-                            srtMain["Geometry"]["P3dRenderStateDepth"].append(srtDepth)
+                            srtMain["Geometry"]["P3dRenderStateMain"].append(srtRender)
                             
                             # Write P3dRenderStateShadow
-                            srtMain["Geometry"]["P3dRenderStateShadow"].append(deepcopy(srtMat))
-                            for i, texture in enumerate(srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ApTextures"]):
+                            srtMain["Geometry"]["P3dRenderStateShadow"].append(deepcopy(srtRender))
+                            for i,_ in enumerate(srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ApTextures"]):
                                 if i:
-                                    texture["Val"] = ""
-                            srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ERenderPass"] = "RENDER_PASS_SHADOW_CAST"
+                                    srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ApTextures"][i] = ""
+                            srtMain["Geometry"]["P3dRenderStateShadow"][-1]["ERenderPass"] = "SHADOW_CAST"
                             srtMain["Geometry"]["P3dRenderStateShadow"][-1]["BFadeToBillboard"] = False
                             
                     #Join meshes back again  
                     JoinThem(meshes)
+                    
+                    # Write Lod Data
+                    srtMain["Geometry"]["PLods"].append(srtLod)     
                     
                     # Write Extent
                     if col == lod_colls[0]:
@@ -735,15 +688,6 @@ def write_srt_json(context, filepath):
                         srtMain["Extents"]["m_cMin"] = list(Extent[0])
                         srtMain["Extents"]["m_cMax"] = list(Extent[6]) 
                     
-                    n_meshes = len(meshes)
-                    srtLod["NNumDrawCalls"] = n_meshes
-                    meshesNum += n_meshes
-                    srtMain["Geometry"]["PLods"].append(srtLod)                  
-                          
-        # Write lodsNum et meshesNum
-        srtMain["Geometry"]["NNum3dRenderStates"] = meshesNum
-        srtMain["Geometry"]["NNumLods"] = lodsNum
-        
         # Write LodProfile
         for k in srtMain["LodProfile"]:
             if k in main_coll:
@@ -775,19 +719,10 @@ def write_srt_json(context, filepath):
         while len(srtMain["PUserStrings"]) < 5:
             srtMain["PUserStrings"].append("")
         
-        # Get fileName
-        fileName = os.path.splitext(os.path.basename(filepath))[0] + ".srt"
-        srtMain["FileName"] = fileName
-        
         # Write the template with generated values
-        wkit_path = bpy.context.preferences.addons[__package__].preferences.wolvenkit_cli
-        check_wkit_path = os.path.exists(wkit_path)
-        if not check_wkit_path:
-            filepath += ".json"
-        with open(filepath, 'w', encoding = 'utf-8') as f:
+        short_filepath = filepath[:-4]
+        with open(short_filepath, 'w', encoding = 'utf-8') as f:
             json.dump(srtMain, f, indent=2)
-        
-        if check_wkit_path:
-            import subprocess
-            command = [str(wkit_path), "--input", filepath, "--json2srt"]
-            subprocess.run(command)
+        command = [os.path.dirname(__file__) +"/converter/srt_json_converter.exe", "-e", short_filepath, "-o", os.path.dirname(filepath)]
+        subprocess.run(command)
+        os.remove(short_filepath)
