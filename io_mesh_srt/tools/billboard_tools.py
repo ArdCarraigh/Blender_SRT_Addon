@@ -166,7 +166,6 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 is_dds = False
                 if file_format == 'DDS':
                     from blender_dds_addon.directx.texconv import Texconv
-                    texconv = Texconv()
                     is_dds = True
                     file_format = 'TARGA'
                 path = os.path.dirname(billboard_mat_nodes["Diffuse Texture"].image.filepath)
@@ -493,9 +492,11 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     
                 # Convert to DDS if requested
                 if is_dds:
-                    slow_codec = True if dds_dxgi == 'BC7_UNORM' else False
-                    texconv.convert_to_dds(file = new_path_diff, dds_fmt = dds_dxgi, out = path, allow_slow_codec = slow_codec)
-                    texconv.convert_to_dds(file = new_path_normal, dds_fmt = dds_dxgi, out = path, allow_slow_codec = slow_codec)
+                    texconv = Texconv()
+                    texconv.convert_to_dds(file = new_path_diff, dds_fmt = dds_dxgi, out = path)
+                    texconv.unload_dll()
+                    texconv = Texconv()
+                    texconv.convert_to_dds(file = new_path_normal, dds_fmt = dds_dxgi, out = path)
                     texconv.unload_dll()
                     os.remove(new_path_diff)
                     os.remove(new_path_normal)
