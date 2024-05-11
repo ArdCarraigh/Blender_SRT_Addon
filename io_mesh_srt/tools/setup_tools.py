@@ -68,7 +68,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
         v_group = obj.vertex_groups.new(name="GeomType")
     if vertex_data and "geometry_type_hint" in vertex_data:
         geom_types = vertex_data["geometry_type_hint"]
-        geom_types = (np.array(geom_types) + 1) * 0.2
+        geom_types = (geom_types + 1) * 0.2
         for k in range(nverts):
             v_group.add([k], geom_types[k], 'REPLACE')
     else:
@@ -137,7 +137,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'AmbientOcclusion' not in obj.vertex_groups:
         v_group = obj.vertex_groups.new(name='AmbientOcclusion')
         if vertex_data and "ambient_occlusion" in vertex_data:
-            ambients = 1 - np.array(vertex_data["ambient_occlusion"])
+            ambients = 1 - vertex_data["ambient_occlusion"]
             for k in range(nverts):
                 v_group.add([k], ambients[k], 'REPLACE')
                 
@@ -145,7 +145,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'SeamBlending' not in obj.vertex_groups:
         v_group = obj.vertex_groups.new(name='SeamBlending')
         if vertex_data and "branch_seam_diffuse" in vertex_data:
-            branches_seam_diff = 1 - np.array(vertex_data["branch_seam_diffuse"])[:,2]
+            branches_seam_diff = 1 - vertex_data["branch_seam_diffuse"][:,2]
             for k in range(nverts):
                 v_group.add([k], branches_seam_diff[k], 'REPLACE')
             
@@ -159,34 +159,34 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'DiffuseUV' not in mesh.attributes:
         uv_map = mesh.attributes.new("DiffuseUV", 'FLOAT2', 'CORNER')
         if vertex_data and "diffuse" in vertex_data:
-            uvs_diff = np.array(vertex_data["diffuse"])[corner_verts_array].flatten()
+            uvs_diff = vertex_data["diffuse"][corner_verts_array].flatten()
             uvs_diff[1::2] = 1-uvs_diff[1::2]
             uv_map.data.foreach_set("vector", uvs_diff)
                 
     if 'DetailUV' not in mesh.attributes:
         uv_map = mesh.attributes.new("DetailUV", 'FLOAT2', 'CORNER')
         if vertex_data and "branch_detail_texture" in vertex_data:
-            uvs_det = np.array(vertex_data["branch_detail_texture"])[corner_verts_array].flatten()
+            uvs_det = vertex_data["branch_detail_texture"][corner_verts_array].flatten()
             uvs_det[1::2] = 1-uvs_det[1::2]
             uv_map.data.foreach_set("vector", uvs_det)
                     
     if 'SeamDiffuseUV' not in mesh.attributes:
         uv_map = mesh.attributes.new("SeamDiffuseUV", 'FLOAT2', 'CORNER')
         if vertex_data and "branch_seam_diffuse" in vertex_data:
-            branches_seam_diff = np.array(vertex_data["branch_seam_diffuse"])[corner_verts_array,:2].flatten()
+            branches_seam_diff = vertex_data["branch_seam_diffuse"][corner_verts_array,:2].flatten()
             branches_seam_diff[1::2] = 1-branches_seam_diff[1::2]
             uv_map.data.foreach_set("vector", branches_seam_diff)
                     
     if 'SeamDetailUV' not in mesh.attributes:
         uv_map = mesh.attributes.new("SeamDetailUV", 'FLOAT2', 'CORNER')
         if vertex_data and "branch_seam_detail" in vertex_data:
-            branches_seam_det = np.array(vertex_data["branch_seam_detail"])[corner_verts_array].flatten()
+            branches_seam_det = vertex_data["branch_seam_detail"][corner_verts_array].flatten()
             branches_seam_det[1::2] = 1-branches_seam_det[1::2]
             uv_map.data.foreach_set("vector", branches_seam_det)
                 
     # Deal with Attributes
     if vertex_data and "pos" in vertex_data:
-        vert_array = np.array(vertex_data["pos"]).flatten()
+        vert_array = vertex_data["pos"].flatten()
     else:
         vert_array = np.zeros(nverts * 3)
         mesh.attributes['position'].data.foreach_get('vector', vert_array)
@@ -198,7 +198,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'vertexLodPosition' not in mesh.attributes:
         attrib = mesh.attributes.new(name='vertexLodPosition', type='FLOAT_VECTOR', domain='POINT')
         if vertex_data and "lod_pos" in vertex_data:
-            verts_lod = np.array(vertex_data["lod_pos"]).flatten()
+            verts_lod = vertex_data["lod_pos"].flatten()
             attrib.data.foreach_set('vector', verts_lod)
         else:
             attrib.data.foreach_set('vector', vert_array)
@@ -206,19 +206,19 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'leafCardCorner' not in mesh.attributes:
         attrib = mesh.attributes.new(name='leafCardCorner', type='FLOAT_VECTOR', domain='POINT')
         if vertex_data and "leaf_card_corner" in vertex_data:
-            leaf_card_corners = np.array(vertex_data["leaf_card_corner"])[:,[2,0,1]].flatten()
+            leaf_card_corners = vertex_data["leaf_card_corner"][:,[2,0,1]].flatten()
             attrib.data.foreach_set('vector', leaf_card_corners)
         
     if 'leafCardLodScalar' not in mesh.attributes:
         attrib = mesh.attributes.new(name='leafCardLodScalar', type='FLOAT', domain='POINT')
         if vertex_data and "leaf_card_lod_scalar" in vertex_data:
-            leaf_card_lod_scalars = np.array(vertex_data["leaf_card_lod_scalar"]).flatten()
+            leaf_card_lod_scalars = vertex_data["leaf_card_lod_scalar"].flatten()
             attrib.data.foreach_set('value', leaf_card_lod_scalars)
         
     if 'leafAnchorPoint' not in mesh.attributes:
         attrib = mesh.attributes.new(name='leafAnchorPoint', type='FLOAT_VECTOR', domain='POINT')
         if vertex_data and "leaf_anchor_point" in vertex_data:
-            leaf_anchor_points = np.array(vertex_data["leaf_anchor_point"]).flatten()
+            leaf_anchor_points = vertex_data["leaf_anchor_point"].flatten()
             attrib.data.foreach_set('vector', leaf_anchor_points)
         
     #SpeedTree Tag

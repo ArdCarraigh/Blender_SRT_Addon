@@ -185,16 +185,21 @@ def read_srt_json(context, filepath):
             # Get Vertex Data
             vert_data = mesh_call["VertexData"]
             
+            # Deal with Null Values
+            for key in vert_data.keys():
+                vert_data[key] = np.array(vert_data[key])
+                vert_data[key][vert_data[key] == None] = 0
+            
             # Deal with int to byte to float conversion if needed
             for attr in srtMat["SVertexDecl"]["AsAttributes"]:
                 if isinstance(attr, dict) and attr["format"] == "BYTE":
                     if "NORMAL" in attr["properties"]:
-                        vert_data["normals"] = (np.array(vert_data["normals"]) / 255 - 0.5) * 2
+                        vert_data["normals"] = (vert_data["normals"] / 255 - 0.5) * 2
                     #if "TANGENT" in attr["properties"]:
                     #    vert_data["tangents"] = (np.array(vert_data["tangents"]) / 255 - 0.5) * 2)
                     #Tangents are read-only in Blender, we can't import them
                     if "AMBIENT_OCCLUSION" in attr["properties"]:
-                        vert_data["ambient_occlusion"] = np.array(vert_data["ambient_occlusion"]) / 255
+                        vert_data["ambient_occlusion"] = vert_data["ambient_occlusion"] / 255
 
             # Face indices
             faces = np.array(mesh_call["IndexData"]).reshape(-1,3)
