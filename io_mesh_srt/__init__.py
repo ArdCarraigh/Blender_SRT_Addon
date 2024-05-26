@@ -66,7 +66,7 @@ class ExportSrtJson(Operator, ExportHelper):
     filename_ext = ".srt"
 
     filter_glob: StringProperty(
-        default="*.srt;*.json",
+        default="*.srt",
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
@@ -97,7 +97,7 @@ def menu_func_import(self, context):
     self.layout.operator(ImportSrtJson.bl_idname, text="SRT (.srt/.json)")
     
 def menu_func_export(self, context):
-    self.layout.operator(ExportSrtJson.bl_idname, text="SRT (.srt/.json)")
+    self.layout.operator(ExportSrtJson.bl_idname, text="SRT (.srt)")
 
 def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
