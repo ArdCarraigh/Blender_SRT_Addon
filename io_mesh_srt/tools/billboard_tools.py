@@ -180,9 +180,10 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 view_layer.use_pass_diffuse_color = True
                 view_layer.use_pass_shadow = True
                 view_layer.use_pass_mist = True
+                temp_scene.render.engine = 'BLENDER_EEVEE_NEXT'
+                temp_scene.display_settings.display_device = 'sRGB'
                 temp_scene.view_settings.view_transform = 'Standard'
                 temp_scene.render.film_transparent = True
-                temp_scene.render.engine = 'BLENDER_EEVEE'
                 temp_scene.use_nodes = True
                 ntree = temp_scene.node_tree
                 nodes = ntree.nodes
@@ -263,7 +264,7 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 rotations = []
                 for i,_ in enumerate(old_mats):
                     old_mats[i] = old_mats[i].copy()
-                    old_mats[i].shadow_method = 'OPAQUE'
+                    old_mats[i].use_transparent_shadow = False
                 for i, obj in enumerate(objects):
                     selectOnly(obj)
                     mesh = obj.data
@@ -391,6 +392,7 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     old_mats[j] = matcap
                 
                 #Render
+                #temp_scene.view_settings.view_transform = 'Standard'
                 for i, cam in enumerate(cameras):
                     temp_scene.camera = cam
                     file_output.file_slots[0].path = "temp_normal_" + str(i)

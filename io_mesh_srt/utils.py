@@ -114,6 +114,11 @@ def get_parent_collection(coll, parent_colls):
     for parent_collection in bpy.data.collections:
         if coll.name in parent_collection.children.keys():
             parent_colls.append(parent_collection)
+            break
+    for koll in parent_colls:
+        for parent_collection in bpy.data.collections:
+            if koll.name in parent_collection.children.keys():
+                parent_colls.append(parent_collection)
     
 def GetCollection(target = "Main", create_if_missing = False, make_active = True):
     active_coll = bpy.context.view_layer.active_layer_collection
@@ -288,10 +293,10 @@ def getMaterial(main_coll, mat, srtRender):
     else:
         srtRender["BDiffuseAlphaMaskIsOpaque"] = True
     
-    if mat.shadow_method != 'NONE':
-        srtRender["BCastsShadows"] = True
-    else:
+    if nodes['Disable Shadow'].inputs[0].links:
         srtRender["BCastsShadows"] = False
+    else:
+        srtRender["BCastsShadows"] = True
     
     #Textures
     texture_names = []

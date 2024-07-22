@@ -4,8 +4,8 @@
 bl_info = {
     "name": "SRT Importer/Exporter (.srt/.json)",
     "author": "Ard Carraigh",
-    "version": (3, 0),
-    "blender": (4, 1, 1),
+    "version": (4, 0),
+    "blender": (4, 2, 0),
     "location": "File > Import-Export",
     "description": "Import and export .srt and .json SpeedTree meshes",
     "doc_url": "https://github.com/ArdCarraigh/Blender_SRT_Addon",
@@ -117,10 +117,5 @@ def unregister():
     
     for klass in CLASSES:
         bpy.utils.unregister_class(klass)
-        
-    for (prop_name, _) in PROPS:
-        delattr(bpy.types.WindowManager.speedtree, prop_name)
+
     delattr(bpy.types.WindowManager, "speedtree")
-    
-if __name__ == "__main__":
-    register()

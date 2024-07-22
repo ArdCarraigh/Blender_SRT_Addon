@@ -333,10 +333,10 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
                             wm.BAmbientOcclusion = False
                             
                         box.prop(wm, "BCastsShadows", text = "Cast Shadow")
-                        if mat.shadow_method != 'NONE':
-                            wm.BCastsShadows = True
-                        else:
+                        if nodes['Disable Shadow'].inputs[0].links:
                             wm.BCastsShadows = False
+                        else:
+                            wm.BCastsShadows = True
                             
                         #Not Supported
                         row = layout.row()
@@ -655,10 +655,15 @@ def updateEFogColorStyle(self, context):
 def updateBCastsShadows(self, context):
     ob = bpy.context.active_object
     if "SpeedTreeTag" in ob.data:
-        if self.BCastsShadows:
-            ob.active_material.shadow_method = 'CLIP'
-        else:
-            ob.active_material.shadow_method = 'NONE'
+        mat = ob.active_material
+        tree = mat.node_tree
+        links = tree.links
+        nodes = tree.nodes
+        input1 = nodes['Disable Shadow'].inputs[0]
+        while input1.links:
+            links.remove(input1.links[0])
+        if not self.BCastsShadows:
+            links.new(nodes['Light Path'].outputs["Is Shadow Ray"], input1)
                 
 def updateBReceivesShadows(self, context):
     ob = bpy.context.active_object
