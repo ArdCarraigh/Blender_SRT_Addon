@@ -195,9 +195,6 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 render_node.layer = view_layer.name
                 set_alpha = nodes.new('CompositorNodeSetAlpha')
                 set_alpha.mode = 'REPLACE_ALPHA'
-                mix = nodes.new('CompositorNodeMixRGB')
-                mix.blend_type = 'MULTIPLY'
-                mix.inputs['Fac'].default_value = 0.65
                 separate_color = nodes.new('CompositorNodeSeparateColor')
                 dilate_red = nodes.new('CompositorNodeDilateErode')
                 dilate_red.mode = 'DISTANCE'
@@ -214,18 +211,18 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 file_output.file_slots.new('Image2')
                 if use_custom_path and custom_path:
                     temp_path = os.path.join(custom_path, "speedtree_temp")
-                    os.makedirs(temp_path)
-                    file_output.base_path = temp_path
                 else:
                     temp_path = os.path.join(path, "speedtree_temp")
+                try: 
                     os.makedirs(temp_path)
-                    file_output.base_path = temp_path
+                except:
+                    rmtree(temp_path)
+                    os.makedirs(temp_path)
+                file_output.base_path = temp_path
                     
-                links.new(render_node.outputs['DiffCol'], mix.inputs[1])
-                links.new(render_node.outputs['Shadow'], mix.inputs[2])
-                links.new(mix.outputs['Image'], set_alpha.inputs['Image'])
+                links.new(render_node.outputs['DiffCol'], set_alpha.inputs['Image'])
                 links.new(render_node.outputs['Alpha'], set_alpha.inputs['Alpha'])
-                links.new(mix.outputs['Image'], separate_color.inputs['Image'])
+                links.new(render_node.outputs['DiffCol'], separate_color.inputs['Image'])
                 links.new(separate_color.outputs['Red'], dilate_red.inputs['Mask'])
                 links.new(separate_color.outputs['Green'], dilate_green.inputs['Mask'])
                 links.new(separate_color.outputs['Blue'], dilate_blue.inputs['Mask'])
@@ -240,6 +237,7 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 # Add Sun
                 bpy.ops.object.light_add(type='SUN')
                 sun = bpy.context.active_object
+                sun.data.angle = radians(120)
                 
                 # UV Unwrap
                 if bb_objects:
@@ -348,8 +346,6 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     bpy.ops.render.render(scene = temp_scene.name)
                     
                 # Second Renders - Ambient
-                links.new(render_node.outputs['DiffCol'], set_alpha.inputs['Image'])
-                links.new(render_node.outputs['DiffCol'], separate_color.inputs['Image'])
                 file_output.file_slots.remove(file_output.inputs[1])
                 for mat in old_mats:
                     mat_tree = mat.node_tree
@@ -398,6 +394,36 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     file_output.file_slots[0].path = "temp_normal_" + str(i)
                     bpy.ops.render.render(scene = temp_scene.name)
                     
+                # Fourth Renders - Shadows
+                volume_geo_nodes = bpy.data.node_groups['Volume_Mesh_Template'].copy()
+                volume_geo_nodes.name = "Volume_Mesh"
+                temp_mesh.modifiers['Leaf_Card'].node_group = volume_geo_nodes
+                
+                #Add shadow smoothing
+                ramp_shadows = nodes.new('CompositorNodeValToRGB')
+                ramp_shadows.color_ramp.elements[1].position = 0.5
+                dilate_shadows = nodes.new('CompositorNodeDilateErode')
+                dilate_shadows.mode = 'FEATHER'
+                dilate_shadows.distance = -30
+                dilate_shadows.falloff = 'SPHERE'
+                contrast_shadows = nodes.new('CompositorNodeBrightContrast')
+                contrast_shadows.inputs['Contrast'].default_value = -10
+                blur_shadows = nodes.new('CompositorNodeBlur')
+                blur_shadows.filter_type = 'CUBIC'
+                blur_shadows.size_x = 40
+                blur_shadows.size_y = 40
+                blur_shadows.inputs['Size'].default_value = 0.8
+                links.new(render_node.outputs['Shadow'], ramp_shadows.inputs['Fac'])
+                links.new(ramp_shadows.outputs['Image'], dilate_shadows.inputs['Mask'])
+                links.new(dilate_shadows.outputs['Mask'], blur_shadows.inputs['Image'])
+                links.new(blur_shadows.outputs['Image'], file_output.inputs[0])
+                
+                #Render
+                for i, cam in enumerate(cameras):
+                    temp_scene.camera = cam
+                    file_output.file_slots[0].path = "temp_shadows_" + str(i)
+                    bpy.ops.render.render(scene = temp_scene.name)
+                    
                 # Assemble the Textures
                 temp_bg = bpy.data.images.new("Untitled", resolution, resolution)
                 bg = nodes.new('CompositorNodeImage')
@@ -405,6 +431,14 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 for i in range(len(cameras)):
                     rgb = nodes.new('CompositorNodeImage')
                     rgb.image = bpy.data.images.load(temp_path + "\\temp_diffuse_" + str(i) + "0001.png", check_existing = True)
+                    shadows = nodes.new('CompositorNodeImage')
+                    shadows.image = bpy.data.images.load(temp_path + "\\temp_shadows_" + str(i) + "0001.png", check_existing = True)
+                    mix_shadows = nodes.new('CompositorNodeMixRGB')
+                    mix_shadows.blend_type = 'MULTIPLY'
+                    mix_shadows.inputs['Fac'].default_value = 0.4
+                    mix_shadows2 = nodes.new('CompositorNodeMixRGB')
+                    mix_shadows2.blend_type = 'OVERLAY'
+                    mix_shadows2.inputs['Fac'].default_value = 0.6
                     transform_rgb = nodes.new('CompositorNodeTransform')
                     transform_rgb.inputs['X'].default_value = (((stored_uvs[i][0] + stored_uvs[i][1]) * 0.5) - 0.5) * resolution
                     transform_rgb.inputs['Y'].default_value = (((stored_uvs[i][2] + stored_uvs[i][3]) * 0.5) - 0.5) * resolution
@@ -432,7 +466,11 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     transform_ambient.inputs['Angle'].default_value = rotations[i]
                     alpha_over_ambient = nodes.new('CompositorNodeAlphaOver')
                     
-                    links.new(rgb.outputs['Image'], transform_rgb.inputs['Image'])
+                    links.new(rgb.outputs['Image'], mix_shadows.inputs[1])
+                    links.new(shadows.outputs['Image'], mix_shadows.inputs[2])
+                    links.new(mix_shadows.outputs['Image'], mix_shadows2.inputs[1])
+                    links.new(shadows.outputs['Image'], mix_shadows2.inputs[2])
+                    links.new(mix_shadows2.outputs['Image'], transform_rgb.inputs['Image'])
                     links.new(alpha.outputs['Image'], transform_alpha.inputs['Image'])
                     links.new(normal.outputs['Image'], transform_normal.inputs['Image'])
                     links.new(ambient.outputs['Image'], transform_ambient.inputs['Image'])
@@ -455,8 +493,11 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     alpha_over_previous_normal = alpha_over_normal
                     alpha_over_previous_ambient = alpha_over_ambient
                 
+                ramp_alpha = nodes.new('CompositorNodeValToRGB')
+                ramp_alpha.color_ramp.elements[0].position = 0.099999
+                ramp_alpha.color_ramp.elements[1].position = 0.10
                 set_alpha_diffuse = nodes.new('CompositorNodeSetAlpha')
-                #set_alpha_diffuse.mode = 'REPLACE_ALPHA'
+                set_alpha_diffuse.mode = 'REPLACE_ALPHA'
                 set_alpha_normal = nodes.new('CompositorNodeSetAlpha')
                 #set_alpha_normal.mode = 'REPLACE_ALPHA'
                 file_output.base_path = custom_path if use_custom_path and custom_path else path
@@ -465,7 +506,8 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 file_output.file_slots.new('temp_billboard_n')
                 
                 links.new(alpha_over_rgb.outputs['Image'], set_alpha_diffuse.inputs[0])
-                links.new(alpha_over_alpha.outputs['Image'], set_alpha_diffuse.inputs[1])
+                links.new(alpha_over_alpha.outputs['Image'], ramp_alpha.inputs['Fac'])
+                links.new(ramp_alpha.outputs['Image'], set_alpha_diffuse.inputs[1])
                 links.new(alpha_over_normal.outputs['Image'], set_alpha_normal.inputs[0])
                 links.new(alpha_over_ambient.outputs['Image'], set_alpha_normal.inputs[1])
                 links.new(set_alpha_diffuse.outputs['Image'], file_output.inputs[0])

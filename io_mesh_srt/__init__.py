@@ -4,8 +4,8 @@
 bl_info = {
     "name": "SRT Importer/Exporter (.srt/.json)",
     "author": "Ard Carraigh",
-    "version": (4, 0),
-    "blender": (4, 2, 0),
+    "version": (4, 1),
+    "blender": (4, 3, 0),
     "location": "File > Import-Export",
     "description": "Import and export .srt and .json SpeedTree meshes",
     "doc_url": "https://github.com/ArdCarraigh/Blender_SRT_Addon",
