@@ -78,19 +78,19 @@ def write_srt_json(context, filepath):
             billboard_uvs = []
             billboard_rotated = []
             billboard_cutout_verts = []
-            billboard_cutout_indices = []
+            billboard_cutout_indices = np.array([])
+            n_indices = 0
+            billboard_cutout_nverts = 0
             billboards = re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects]))
-            cutout = re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))
+            cutout_check = main_coll["BCutout"]
             uv_array = np.zeros(12)
             if billboards:
-                number_billboards = len(billboards)
                 for i, billboard in enumerate(billboards):
                     bb = bb_coll.objects[billboard].data
                     if not i:
-                        verts = bb.vertices
-                        bb_width = verts[2].co[0] - verts[0].co[0]
-                        bb_top = verts[2].co[2]
-                        bb_bottom = verts[0].co[2]
+                        bb_width = main_coll["FWidth"]
+                        bb_top = main_coll["FTopPos"]
+                        bb_bottom = main_coll["FBottomPos"]
                         mat = bb.materials[0]
                         
                     bb.attributes["DiffuseUV"].data.foreach_get("vector", uv_array)
@@ -104,26 +104,27 @@ def write_srt_json(context, filepath):
                     billboard_uv_y = 1 - billboard_uv_y
                     billboard_uvs.append({"x" : billboard_uv_x[0], "y" : billboard_uv_y[0], "z" : billboard_uv_x[2] - billboard_uv_x[0], "w" : billboard_uv_y[2] - billboard_uv_y[0]})
             
-            if cutout:            
-                cut_obj = bb_coll.objects[cutout[0]]
-                selectOnly(cut_obj)
-                #Triangulate mesh as user might make a custom cutout with quads
-                TriangulateActiveMesh()
-                cut = cut_obj.data
-                billboard_cutout_nverts = len(cut.vertices)
-                cutout_vert_array = np.zeros(billboard_cutout_nverts * 3)
-                cut.attributes["position"].data.foreach_get("vector", cutout_vert_array)
-                cutout_vert_array[::3] = (cutout_vert_array[::3] - -bb_width * 0.5) / bb_width
-                cutout_vert_array[2::3] = (cutout_vert_array[2::3] - bb_bottom) / (bb_top - bb_bottom)
-                billboard_cutout_verts = [dict(zip(["x", "y"], x)) for x in cutout_vert_array.reshape(-1,3)[:,[0,2]]]
-                n_indices = len(cut.polygons) * 3
-                billboard_cutout_indices = np.zeros(n_indices, dtype = int)
-                cut.attributes[".corner_vert"].data.foreach_get("value", billboard_cutout_indices)
+                if cutout_check:
+                    cutout = re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))        
+                    cut_obj = bb_coll.objects[cutout[0]]
+                    selectOnly(cut_obj)
+                    #Triangulate mesh as user might make a custom cutout with quads
+                    TriangulateActiveMesh()
+                    cut = cut_obj.data
+                    billboard_cutout_nverts = len(cut.vertices)
+                    cutout_vert_array = np.zeros(billboard_cutout_nverts * 3)
+                    cut.attributes["position"].data.foreach_get("vector", cutout_vert_array)
+                    cutout_vert_array[::3] = (cutout_vert_array[::3] - -bb_width * 0.5) / bb_width
+                    cutout_vert_array[2::3] = (cutout_vert_array[2::3] - bb_bottom) / (bb_top - bb_bottom)
+                    billboard_cutout_verts = [dict(zip(["x", "y"], x)) for x in cutout_vert_array.reshape(-1,3)[:,[0,2]]]
+                    n_indices = len(cut.polygons) * 3
+                    billboard_cutout_indices = np.zeros(n_indices, dtype = int)
+                    cut.attributes[".corner_vert"].data.foreach_get("value", billboard_cutout_indices)
                        
             srtMain["VerticalBillboards"]["FWidth"] = bb_width
             srtMain["VerticalBillboards"]["FTopPos"] = bb_top
             srtMain["VerticalBillboards"]["FBottomPos"] = bb_bottom
-            srtMain["VerticalBillboards"]["NNumBillboards"] = number_billboards
+            srtMain["VerticalBillboards"]["NNumBillboards"] = main_coll["NNumBillboards"]
             srtMain["VerticalBillboards"]["PTexCoords"] = billboard_uvs
             srtMain["VerticalBillboards"]["PRotated"] = billboard_rotated
             srtMain["VerticalBillboards"]["NNumCutoutVertices"] = billboard_cutout_nverts

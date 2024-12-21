@@ -259,52 +259,23 @@ def getMaterial(main_coll, mat, srtRender):
     
     # Material Custom Attributes
     for prop, value in list(mat.items()):
-        if prop in ["BBlending", "BReceivesShadows", "BShadowSmoothing", "BBranchesPresent", "BFrondsPresent", "BLeavesPresent", "BFacingLeavesPresent", "BRigidMeshesPresent"]:
-            srtRender[prop] = bool(value)
-        else:
-            srtRender[prop] = value
-        
-    # Material Nodes
-    n_tree = mat.node_tree
-    nodes = n_tree.nodes
-    links = n_tree.links
-    
-    # Color Sets
-    srtRender["VAmbientColor"] = dict(zip(["x", "y", "z"], list(nodes["Ambient Color"].outputs['Color'].default_value)[:-1]))
-    srtRender["VDiffuseColor"] = dict(zip(["x", "y", "z"], list(nodes["Diffuse Color"].outputs['Color'].default_value)[:-1]))
-    srtRender["VSpecularColor"] = dict(zip(["x", "y", "z"], list(nodes["Specular Color"].outputs['Color'].default_value)[:-1]))
-    srtRender["VTransmissionColor"] = dict(zip(["x", "y", "z"], list(nodes["Transmission Color"].outputs['Color'].default_value)[:-1]))
-    
-    srtRender["FAmbientContrastFactor"] = nodes['Ambient Contrast Factor'].outputs['Value'].default_value
-    srtRender["FDiffuseScalar"] = nodes['Diffuse Scalar'].outputs['Value'].default_value
-    srtRender["FShininess"] = nodes['Shininess'].outputs['Value'].default_value * 128
-    srtRender["FTransmissionShadowBrightness"] = nodes['Transmission Shadow Brightness'].outputs['Value'].default_value
-    srtRender["FTransmissionViewDependency"] = nodes['Transmission View Dependency'].outputs['Value'].default_value
-    srtRender["FBranchSeamWeight"] = nodes['Branch Seam Weight'].outputs['Value'].default_value
-    srtRender["FAlphaScalar"] = nodes['Alpha Scalar'].outputs['Value'].default_value
-    
-    if nodes["Ambient Occlusion Mix"].inputs[7].links:
-        srtRender["BAmbientOcclusion"] = True
-    else:
-        srtRender["BAmbientOcclusion"] = False
-        
-    if nodes['Alpha Scalar Mix'].inputs[6].links:
-        srtRender["BDiffuseAlphaMaskIsOpaque"] = False
-    else:
-        srtRender["BDiffuseAlphaMaskIsOpaque"] = True
-    
-    if nodes['Disable Shadow'].inputs[0].links:
-        srtRender["BCastsShadows"] = False
-    else:
-        srtRender["BCastsShadows"] = True
+        if prop in srtRender:
+            if prop.startswith("B"):
+                srtRender[prop] = bool(value)
+            elif prop.startswith("V"):
+                srtRender[prop] = dict(zip(["x", "y", "z"], list(value)[:-1]))
+            elif prop == "FShininess":
+                srtRender[prop] = value * 128
+            else:
+                srtRender[prop] = value
     
     #Textures
     texture_names = []
-    diff_tex = nodes["Diffuse Texture"].image
-    norm_tex = nodes["Normal Texture"].image
-    det_tex = nodes["Detail Texture"].image
-    det_norm_tex = nodes["Detail Normal Texture"].image
-    spec_tex = nodes["Specular Texture"].image
+    diff_tex = mat["diffuseTexture"]
+    norm_tex = mat["normalTexture"]
+    det_tex = mat["detailTexture"]
+    det_norm_tex = mat["detailNormalTexture"]
+    spec_tex = mat["specularTexture"]
     if diff_tex:
         diff_tex_name = diff_tex.name
         srtRender["ApTextures"][0] = diff_tex_name

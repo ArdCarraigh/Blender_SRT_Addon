@@ -41,6 +41,7 @@ class RemoveSRTCollisionObject(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
+        main_coll = GetCollection(make_active=True)
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
@@ -106,36 +107,36 @@ class SpeedTreeCollisionPanel(bpy.types.Panel):
             
             layout = self.layout
             main_coll = GetCollection(make_active=False)
-            collision_coll = GetCollection("Collision Objects", make_active=False)
-            if collision_coll:
-                row = layout.row()
-                row.template_list("SPEEDTREE_UL_collisions", "", collision_coll, "objects", wm, "SpeedTreeCollisionsIndex", rows=3)
-                index = np.where(np.array(collision_coll.objects) == bpy.context.active_object)[0]
-                if index.size:
-                    if wm.SpeedTreeCollisionsIndex != index[0]:
-                        wm.SpeedTreeCollisionsIndex = index[0]
-                else:
-                    wm.SpeedTreeCollisionsIndex = -1
-                
+            
             if main_coll:
                 row = layout.row(align=True)
                 row.operator(AddSRTCollisionSphere.bl_idname, text = "Add")
                 row.operator(RemoveSRTCollisionObject.bl_idname, text = "Remove")
-                
-            if collision_coll:
-                n = 0
-                for obj in collision_coll.objects:
-                    if "Material_Cylinder" not in obj.data.materials:
-                        n += 1
-                if n>=2:
+            
+                collision_coll = GetCollection("Collision Objects", make_active=False)
+                if collision_coll:
+                    row = layout.row()
+                    row.template_list("SPEEDTREE_UL_collisions", "", collision_coll, "objects", wm, "SpeedTreeCollisionsIndex", rows=3)
+                    index = np.where(np.array(collision_coll.objects) == bpy.context.active_object)[0]
+                    if index.size:
+                        if wm.SpeedTreeCollisionsIndex != index[0]:
+                            wm.SpeedTreeCollisionsIndex = index[0]
+                    else:
+                        wm.SpeedTreeCollisionsIndex = -1
+                    
+                    n = 0
+                    for obj in collision_coll.objects:
+                        if "Material_Cylinder" not in obj.data.materials:
+                            n += 1
                     row = layout.row()
                     box = row.box()
                     box.label(text="Collision Sphere Connection:")
                     box_row = box.row(align=True)
+                    box_row.enabled = n > 1
                     box_row.prop(wm, "collisionObject1", text = "From")
                     box_row.prop(wm, "collisionObject2", text = "To")
                     box_row = box.row()
-                    box_row.enabled = wm.collisionObject1 is not None and wm.collisionObject2 is not None
+                    box_row.enabled = wm.collisionObject1 is not None and wm.collisionObject2 is not None and n > 1
                     box_row.operator(AddSRTSphereConnection.bl_idname, text = "Add Sphere Connection")
             
         return

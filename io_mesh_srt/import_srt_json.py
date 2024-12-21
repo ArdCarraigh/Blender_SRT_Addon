@@ -107,11 +107,28 @@ def read_srt_json(context, filepath):
                     
             # Create Billboards
             generate_srt_billboards(bpy.context, nbb, bb_width, bb_bottom, bb_top, uvs_all)
+            main_coll["NNumBillboards"] = nbb
+            main_coll["FWidth"] = bb_width
+            main_coll["FTopPos"] = bb_top
+            main_coll["FBottomPos"] = bb_bottom
+            main_coll["BCutout"] = ncutout > 0
             
             # Set the Textures
             bbMat = srt["Geometry"]["ABillboardRenderStateMain"]
             for k, tex in enumerate(bbMat["ApTextures"]):
-                if tex:
+                if not tex:
+                    match k:
+                        case 0:
+                            wm.diffuseTexture = None
+                        case 1:
+                            wm.normalTexture = None
+                        case 2:
+                            wm.detailTexture = None
+                        case 3:
+                            wm.detailNormalTexture = None
+                        case 4:
+                            wm.specularTexture = None
+                else:
                     tex_path = os.path.dirname(filepath) + "\\" + tex
                     if os.path.exists(tex_path):
                         if tex.endswith(".dds") and dds_addon:
@@ -161,12 +178,17 @@ def read_srt_json(context, filepath):
                 wm.BCutout = True
             
     #Horizontal Billboard
-    if "HorizontalBillboard" in srt:
-        if srt['HorizontalBillboard']['BPresent']:
-            bb_horiz_verts = [list(vert.values()) for vert in srt['HorizontalBillboard']['AvPositions']]
-            bb_horiz_uvs = np.array([list(x.values()) for x in srt['HorizontalBillboard']['AfTexCoords']])[[0,1,2,2,3,0]].flatten()
-            bb_horiz_uvs[1::2] = 1 - bb_horiz_uvs[1::2]
-            generate_srt_horizontal_billboard(bpy.context, verts = bb_horiz_verts, uvs = bb_horiz_uvs)
+    bb_horiz_check = ("HorizontalBillboard" in srt and srt['HorizontalBillboard']['BPresent'])
+    if bb_horiz_check:
+        bb_horiz_verts = [list(vert.values()) for vert in srt['HorizontalBillboard']['AvPositions']]
+        bb_horiz_uvs = np.array([list(x.values()) for x in srt['HorizontalBillboard']['AfTexCoords']])[[0,1,2,2,3,0]].flatten()
+        bb_horiz_uvs[1::2] = 1 - bb_horiz_uvs[1::2]
+        generate_srt_horizontal_billboard(bpy.context, verts = bb_horiz_verts, uvs = bb_horiz_uvs)
+            
+    main_coll["BHorizontalBillboard"] = bb_horiz_check
+    main_coll["FHeight"] = bb_horiz_verts[1][2] if bb_horiz_check else 0
+    main_coll["FSize"] = bb_horiz_verts[1][0] * 2 if bb_horiz_check else 0
+            
            
     # Geometry Data #
     # For each LOD
@@ -224,7 +246,19 @@ def read_srt_json(context, filepath):
             
             # Set the Textures
             for k, tex in enumerate(srtMat["ApTextures"]):
-                if tex:
+                if not tex:
+                    match k:
+                        case 0:
+                            wm.diffuseTexture = None
+                        case 1:
+                            wm.normalTexture = None
+                        case 2:
+                            wm.detailTexture = None
+                        case 3:
+                            wm.detailNormalTexture = None
+                        case 4:
+                            wm.specularTexture = None
+                else:
                     tex_path = os.path.dirname(filepath) + "\\" + tex
                     if os.path.exists(tex_path):
                         if tex.endswith(".dds") and dds_addon:

@@ -3,7 +3,7 @@
 
 import bpy
 import re
-from bpy.props import BoolProperty, EnumProperty, StringProperty, IntProperty, CollectionProperty
+from bpy.props import BoolProperty, EnumProperty, StringProperty, IntProperty, CollectionProperty, FloatProperty
 from io_mesh_srt.utils import GetCollection
 
 class UserStringsListActions(bpy.types.Operator):
@@ -169,17 +169,12 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
                 box_row = box.row()
                 box_row.label(text="Shader Settings")
                 box_row = box.row()
-                box_row.prop(wm, "ELightingModel", text = '')
+                box_row.prop(wm, "ELightingModel", text = 'Lighting')
                 if wm.ELightingModel != main_coll["ELightingModel"]:
                     wm.ELightingModel = main_coll["ELightingModel"]
                     
                 box_row = box.row()
-                box_row.prop(wm, "ELodMethod", text = '')
-                if wm.ELodMethod != main_coll["ELodMethod"]:
-                    wm.ELodMethod = main_coll["ELodMethod"]
-                    
-                box_row = box.row()
-                box_row.prop(wm, "EShaderGenerationMode", text = '')
+                box_row.prop(wm, "EShaderGenerationMode", text = 'Shader')
                 if wm.EShaderGenerationMode != main_coll["EShaderGenerationMode"]:
                     wm.EShaderGenerationMode = main_coll["EShaderGenerationMode"]
                 
@@ -190,6 +185,44 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
                 if bb_coll or horiz_coll or nLod != 1 or nMat != 1:
                     wm.BUsedAsGrass = False
                 box_row.enabled = not bb_coll and not horiz_coll and nLod == 1 and nMat == 1
+                
+                row = layout.row()
+                box = row.box()
+                box.label(text = 'LOD Profile')
+                #box_row = box.row()
+                #box_row.prop(wm, "m_f3dRange", text = "3D Range")
+                #if wm.m_f3dRange != main_coll['m_f3dRange']:
+                #    wm.m_f3dRange = main_coll['m_f3dRange']
+                
+                box_row = box.row()
+                box_row.prop(wm, "ELodMethod", text = 'Method')
+                if wm.ELodMethod != main_coll["ELodMethod"]:
+                    wm.ELodMethod = main_coll["ELodMethod"]
+                
+                box_row = box.row()    
+                box_row.prop(wm, "m_fHighDetail3dDistance", text = "High Detail 3D Distance")
+                if wm.m_fHighDetail3dDistance != main_coll['m_fHighDetail3dDistance']:
+                    wm.m_fHighDetail3dDistance = main_coll['m_fHighDetail3dDistance']
+                
+                box_row = box.row()  
+                box_row.prop(wm, "m_fLowDetail3dDistance", text = "Low Detail 3D Distance")
+                if wm.m_fLowDetail3dDistance != main_coll['m_fLowDetail3dDistance']:
+                    wm.m_fLowDetail3dDistance = main_coll['m_fLowDetail3dDistance']
+                
+                #box_row = box.row()   
+                #box_row.prop(wm, "m_fBillboardRange", text = "Billboard Range")
+                #if wm.m_fBillboardRange != main_coll['m_fBillboardRange']:
+                #    wm.m_fBillboardRange = main_coll['m_fBillboardRange']
+                
+                box_row = box.row()    
+                box_row.prop(wm, "m_fBillboardStartDistance", text = "Billboard Start Distance")
+                if wm.m_fBillboardStartDistance != main_coll['m_fBillboardStartDistance']:
+                    wm.m_fBillboardStartDistance = main_coll['m_fBillboardStartDistance']
+                
+                box_row = box.row()
+                box_row.prop(wm, "m_fBillboardFinalDistance", text = "Billboard End Distance")
+                if wm.m_fBillboardFinalDistance != main_coll['m_fBillboardFinalDistance']:
+                    wm.m_fBillboardFinalDistance = main_coll['m_fBillboardFinalDistance']
                 
         return
         
@@ -212,6 +245,36 @@ def updateBUsedAsGrass(self, context):
     main_coll = GetCollection(make_active=False)   
     if main_coll:
         main_coll["BUsedAsGrass"] = self.BUsedAsGrass
+        
+def updatem_f3dRange(self, context):
+    main_coll = GetCollection(make_active=False)     
+    if main_coll:
+        main_coll["m_f3dRange"] = self.m_f3dRange
+        
+def updatem_fHighDetail3dDistance(self, context):
+    main_coll = GetCollection(make_active=False)    
+    if main_coll:
+        main_coll["m_fHighDetail3dDistance"] = self.m_fHighDetail3dDistance
+        
+def updatem_fLowDetail3dDistance(self, context):
+    main_coll = GetCollection(make_active=False)     
+    if main_coll:
+        main_coll["m_fLowDetail3dDistance"] = self.m_fLowDetail3dDistance
+        
+def updatem_fBillboardRange(self, context):
+    main_coll = GetCollection(make_active=False)    
+    if main_coll:
+        main_coll["m_fBillboardRange"] = self.m_fBillboardRange
+        
+def updatem_fBillboardStartDistance(self, context):
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["m_fBillboardStartDistance"] = self.m_fBillboardStartDistance
+        
+def updatem_fBillboardFinalDistance(self, context):
+    main_coll = GetCollection(make_active=False)     
+    if main_coll:
+        main_coll["m_fBillboardFinalDistance"] = self.m_fBillboardFinalDistance
      
 PROPS_General_Panel = [
 ("PUserStringsIndex", IntProperty(
@@ -251,6 +314,54 @@ PROPS_General_Panel = [
         name="Used as Grass",
         update = updateBUsedAsGrass,
         description="Set the mesh as grass. Requires no billboard, a single LOD and a single material"
+    )),
+('m_f3dRange', FloatProperty(
+        name="3D Range",
+        description="Set the distance from which meshes are enabled",
+        update = updatem_f3dRange,
+        default = 0,
+        min = 0,
+        precision = 4
+    )),
+('m_fHighDetail3dDistance', FloatProperty(
+        name="High Detail 3D Distance",
+        description="Set the distance at which lod0 is no longer used",
+        update = updatem_fHighDetail3dDistance,
+        default = 10,
+        min = 0,
+        precision = 4
+    )),
+('m_fLowDetail3dDistance', FloatProperty(
+        name="Low Detail 3D Distance",
+        description="Set the distance at which lod2 gets used",
+        update = updatem_fLowDetail3dDistance,
+        default = 30,
+        min = 0,
+        precision = 4
+    )),
+('m_fBillboardRange', FloatProperty(
+        name="Billboard Range",
+        description="Set the distance from which billboard is enabled",
+        update = updatem_fBillboardRange,
+        default = 0,
+        min = 0,
+        precision = 4
+    )),
+('m_fBillboardStartDistance', FloatProperty(
+        name="Billboard Start Distance",
+        description="Set the distance at which billboard starts to get used",
+        update = updatem_fBillboardStartDistance,
+        default = 80,
+        min = 0,
+        precision = 4
+    )), 
+('m_fBillboardFinalDistance', FloatProperty(
+        name="Billboard End Distance",
+        description="Set the distance at which billboard disappears",
+        update = updatem_fBillboardFinalDistance,
+        default = 100,
+        min = 0,
+        precision = 4
     ))
 ]
 

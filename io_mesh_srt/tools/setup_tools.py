@@ -62,6 +62,18 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
         for k in srtMain['Wind']:
             srt_coll[k] = srtMain['Wind'][k]
             
+        # Vertical Billboard
+        srt_coll["NNumBillboards"] = 0
+        srt_coll["FWidth"] = 0
+        srt_coll["FTopPos"] = 0
+        srt_coll["FBottomPos"] = 0
+        srt_coll["BCutout"] = False
+        
+        # Horizontal Billboard
+        srt_coll["BHorizontalBillboard"] = False
+        srt_coll["FHeight"] = 0
+        srt_coll["FSize"] = 0
+            
     # Deal with Vertex Groups
     #Geometry Type
     if 'GeomType' not in obj.vertex_groups:
@@ -222,7 +234,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
             attrib.data.foreach_set('vector', leaf_anchor_points)
         
     #SpeedTree Tag
-    mesh["SpeedTreeTag"] = 1
+    obj["SpeedTreeTag"] = 1
         
     # Deal with Geometry Nodes
     if obj.modifiers and "Leaf_Card" not in obj.modifiers[0].node_group.name:

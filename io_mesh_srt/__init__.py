@@ -4,8 +4,8 @@
 bl_info = {
     "name": "SRT Importer/Exporter (.srt/.json)",
     "author": "Ard Carraigh",
-    "version": (4, 1),
-    "blender": (4, 3, 0),
+    "version": (4, 2),
+    "blender": (4, 3, 2),
     "location": "File > Import-Export",
     "description": "Import and export .srt and .json SpeedTree meshes",
     "doc_url": "https://github.com/ArdCarraigh/Blender_SRT_Addon",
@@ -22,7 +22,6 @@ from io_mesh_srt.import_srt_json import read_srt_json
 from io_mesh_srt.export_srt_json import write_srt_json 
 from io_mesh_srt.ui.main_panel import CLASSES_Main_Panel, PROPS_Main_Panel
 from io_mesh_srt.ui.general_panel import CLASSES_General_Panel, PROPS_General_Panel
-from io_mesh_srt.ui.lod_panel import CLASSES_Lod_Panel, PROPS_Lod_Panel
 from io_mesh_srt.ui.vertex_panel import CLASSES_Vertex_Panel, PROPS_Vertex_Panel
 from io_mesh_srt.ui.collision_panel import CLASSES_Collision_Panel, PROPS_Collision_Panel
 from io_mesh_srt.ui.billboard_panel import CLASSES_Billboard_Panel, PROPS_Billboard_Panel
@@ -89,8 +88,8 @@ class ExportSrtJson(Operator, ExportHelper):
 class SpeedTreeProperties(PropertyGroup):
     placeholder: IntProperty(name="Placeholder")
     
-PROPS = [*PROPS_Main_Panel, *PROPS_General_Panel, *PROPS_Lod_Panel, *PROPS_Vertex_Panel, *PROPS_Collision_Panel, *PROPS_Billboard_Panel, *PROPS_Material_Panel]
-CLASSES = [ImportSrtJson, ExportSrtJson, SpeedTreeProperties, *CLASSES_Main_Panel, *CLASSES_General_Panel, *CLASSES_Lod_Panel, *CLASSES_Vertex_Panel, *CLASSES_Collision_Panel, *CLASSES_Billboard_Panel, *CLASSES_Material_Panel]
+PROPS = [*PROPS_Main_Panel, *PROPS_General_Panel, *PROPS_Vertex_Panel, *PROPS_Collision_Panel, *PROPS_Billboard_Panel, *PROPS_Material_Panel]
+CLASSES = [ImportSrtJson, ExportSrtJson, SpeedTreeProperties, *CLASSES_Main_Panel, *CLASSES_General_Panel, *CLASSES_Vertex_Panel, *CLASSES_Collision_Panel, *CLASSES_Billboard_Panel, *CLASSES_Material_Panel]
     
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):

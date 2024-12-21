@@ -31,7 +31,7 @@ def add_srt_sphere(context, radius, location):
     return sphere
     
 def remove_srt_sphere(context, index):
-    collision_coll = GetCollection("Collision Objects")
+    collision_coll = GetCollection("Collision Objects", make_active=False)
     
     if collision_coll:
         if collision_coll.objects:

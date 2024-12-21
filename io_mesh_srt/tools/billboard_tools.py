@@ -50,7 +50,7 @@ def generate_srt_billboards(context, number_billboards, bb_width, bb_bottom, bb_
             obj.rotation_euler[2] = radians(90 + angle_diff * i)
             
             #SpeedTree Tag
-            bb["SpeedTreeTag"] = 2
+            obj["SpeedTreeTag"] = 2
         
             # UV Map
             uv_map = bb.attributes.new("DiffuseUV", 'FLOAT2', 'CORNER')
@@ -91,11 +91,11 @@ def generate_srt_horizontal_billboard(context, height = 0.5, size = 1, verts = N
     # Add the mesh to the scene
     bb = bpy.data.meshes.new(name="Mesh_horizontal_billboard")
     bb.from_pydata(verts, [],faces)
-    object_data_add(context, bb)
+    obj = object_data_add(context, bb)
     bb.shade_smooth()
     
     #SpeedTree Tag
-    bb["SpeedTreeTag"] = 2
+    obj["SpeedTreeTag"] = 2
 
     # UV Map
     uv_map = bb.attributes.new("DiffuseUV", 'FLOAT2', 'CORNER')
@@ -158,9 +158,11 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 
                 # Get File Name and Directory
                 if bb_objects:
-                    billboard_mat_nodes = bb_coll.objects[bb_objects[0]].data.materials[0].node_tree.nodes
+                    billboard_mat = bb_coll.objects[bb_objects[0]].data.materials[0]
+                    billboard_mat_nodes = billboard_mat.node_tree.nodes
                 elif horiz_objects:
-                    billboard_mat_nodes = horiz_objects[0].data.materials[0].node_tree.nodes
+                    billboard_mat = horiz_objects[0].data.materials[0]
+                    billboard_mat_nodes = billboard_mat.node_tree.nodes
                     
                 # Get File Format
                 is_dds = False
@@ -168,7 +170,11 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                     from blender_dds_addon.directx.texconv import Texconv
                     is_dds = True
                     file_format = 'TARGA'
-                path = os.path.dirname(billboard_mat_nodes["Diffuse Texture"].image.filepath)
+                diff_tex = billboard_mat_nodes["Diffuse Texture"].image
+                if use_custom_path and custom_path:
+                    path = custom_path
+                else:
+                    path = os.path.dirname(diff_tex.filepath) if diff_tex else "/tmp/"
                 ext = ".png" if file_format == 'PNG' else ".tga"
                 filename = "\\" + main_coll.name + "_Billboard" + ext
                 filename_normal = "\\" + main_coll.name + "_Billboard_n" + ext
@@ -209,10 +215,7 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 alpha_over = nodes.new('CompositorNodeAlphaOver')
                 file_output = nodes.new('CompositorNodeOutputFile')
                 file_output.file_slots.new('Image2')
-                if use_custom_path and custom_path:
-                    temp_path = os.path.join(custom_path, "speedtree_temp")
-                else:
-                    temp_path = os.path.join(path, "speedtree_temp")
+                temp_path = os.path.join(path, "speedtree_temp")
                 try: 
                     os.makedirs(temp_path)
                 except:
@@ -500,7 +503,7 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 set_alpha_diffuse.mode = 'REPLACE_ALPHA'
                 set_alpha_normal = nodes.new('CompositorNodeSetAlpha')
                 #set_alpha_normal.mode = 'REPLACE_ALPHA'
-                file_output.base_path = custom_path if use_custom_path and custom_path else path
+                file_output.base_path = path
                 file_output.format.file_format = file_format
                 file_output.file_slots[0].path = "temp_billboard"
                 file_output.file_slots.new('temp_billboard_n')
@@ -519,10 +522,10 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                 # Rename the files
                 old_name_diff = "\\temp_billboard0001" + ext
                 old_name_normal = "\\temp_billboard_n0001" + ext
-                old_path_diff = custom_path + old_name_diff if use_custom_path and custom_path else path + old_name_diff
-                old_path_normal = custom_path + old_name_normal if use_custom_path and custom_path else path + old_name_normal
-                new_path_diff = custom_path + filename if use_custom_path and custom_path else path + filename
-                new_path_normal = custom_path + filename_normal if use_custom_path and custom_path else path + filename_normal
+                old_path_diff = path + old_name_diff
+                old_path_normal = path + old_name_normal
+                new_path_diff = path + filename
+                new_path_normal = path + filename_normal
                 try:
                     os.rename(old_path_diff, new_path_diff)
                 except FileExistsError:
@@ -565,21 +568,25 @@ def generate_srt_billboard_texture(context, resolution, margin, dilation, file_f
                         image.colorspace_settings.name = 'sRGB'
                         billboard_mat_nodes["Diffuse Texture"].image = image
                         billboard_mat_nodes["Branch Seam Diffuse Texture"].image = image
+                        billboard_mat["diffuseTexture"] = image
                         image_normal = load_dds(new_path_normal)
                         image_normal.name += ".dds"
                         image_normal.filepath = new_path_normal
                         image_normal.colorspace_settings.name = 'Non-Color'
                         billboard_mat_nodes["Normal Texture"].image = image_normal
                         billboard_mat_nodes["Branch Seam Normal Texture"].image = image_normal
+                        billboard_mat["normalTexture"] = image_normal
                     else:
                         image = bpy.data.images.load(new_path_diff)
                         image.colorspace_settings.name = 'sRGB'
                         billboard_mat_nodes["Diffuse Texture"].image = image
                         billboard_mat_nodes["Branch Seam Diffuse Texture"].image = image
+                        billboard_mat["diffuseTexture"] = image
                         image_normal = bpy.data.images.load(new_path_normal)
                         image_normal.colorspace_settings.name = 'Non-Color'
                         billboard_mat_nodes["Normal Texture"].image = image_normal
                         billboard_mat_nodes["Branch Seam Normal Texture"].image = image_normal
+                        billboard_mat["normalTexture"] = image_normal
                 
                 # Clean up
                 rmtree(temp_path)

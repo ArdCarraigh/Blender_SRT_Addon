@@ -54,7 +54,6 @@ class SpeedTreeMainPanel(bpy.types.Panel):
             row.scale_x = 1.44
             row.scale_y = 1.4
             row.prop_enum(wm, "SpeedTreeSubPanel", 'general', text = "")
-            row.prop_enum(wm, "SpeedTreeSubPanel", 'lod', text = "")
             row.prop_enum(wm, "SpeedTreeSubPanel", 'vertex', text = "")
             row.prop_enum(wm, "SpeedTreeSubPanel", 'collision', text = "")
             row.prop_enum(wm, "SpeedTreeSubPanel", 'billboard', text = "")
@@ -68,11 +67,10 @@ PROPS_Main_Panel = [
         description="Set the active SpeedTree subpanel",
         items=(
             ('general', "general", "Show the general SpeedTree subpanel", 'SETTINGS', 0),
-            ('lod', "lod", "Show the general SpeedTree subpanel", 'MOD_DECIM', 1),
-            ('vertex', "vertex", "Show the vertex SpeedTree subpanel",'VERTEXSEL', 2),
-            ('collision', "collision", "Show the collision SpeedTree subpanel", 'META_CAPSULE', 3),
-            ('billboard', "billboard", "Show the billboard SpeedTree subpanel", 'IMAGE_PLANE', 4),
-            ('material', "material", "Show the material SpeedTree subpanel", 'NODE_MATERIAL', 5)
+            ('vertex', "vertex", "Show the vertex SpeedTree subpanel",'VERTEXSEL', 1),
+            ('collision', "collision", "Show the collision SpeedTree subpanel", 'META_CAPSULE', 2),
+            ('billboard', "billboard", "Show the billboard SpeedTree subpanel", 'IMAGE_PLANE', 3),
+            ('material', "material", "Show the material SpeedTree subpanel", 'NODE_MATERIAL', 4)
         ),
         default='general'
     ))

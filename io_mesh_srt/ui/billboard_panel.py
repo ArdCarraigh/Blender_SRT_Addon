@@ -43,127 +43,94 @@ class SpeedTreeBillboardsPanel(bpy.types.Panel):
             
             layout = self.layout
             main_coll = GetCollection(make_active=False)
-            bb_coll = None
-            horiz_coll = None
             if main_coll:
-                for col in main_coll.children:
-                    if re.search("Vertical Billboards", col.name):
-                        bb_coll = col
-                    if re.search("Horizontal Billboard", col.name):
-                        horiz_coll = col
-                
-                row = layout.row()
-                row.prop(wm, "BUpdateBillboards", text = "Update Billboards")            
+                      
                 row = layout.row()
                 box = row.box()
                 box_row = box.row()
                 box_row.label(text="Vertical Billboards")
                 box_row = box.row()
-                box_row.enabled = wm.BUpdateBillboards
                 box_row.prop(wm, "NNumBillboards", text = 'Number')
-                if not bb_coll:
-                    wm.NNumBillboards = 0
-                elif not re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects])):
-                    wm.NNumBillboards = 0
-                else:
-                    bb_objects = re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects]))
-                    obj = bb_coll.objects[bb_objects[0]]
-                    verts = obj.data.vertices
-                    bb_width = verts[2].co[0] - verts[0].co[0]
-                    bb_top = verts[2].co[2]
-                    bb_bottom = verts[0].co[2]
-                    number_billboards = len(bb_objects)
-                    ngroup = obj.modifiers[0].node_group
-                    if wm.NNumBillboards != number_billboards:
-                        wm.NNumBillboards = number_billboards
+                if wm.NNumBillboards != main_coll["NNumBillboards"]:
+                    wm.NNumBillboards = main_coll["NNumBillboards"]
                             
-                    box_row = box.row()
-                    box_row.enabled = wm.NNumBillboards > 0 and wm.BUpdateBillboards
-                    box_row.prop(wm, "FWidth", text = 'Width')
-                    if wm.FWidth != bb_width:
-                        wm.FWidth = bb_width
+                box_row = box.row()
+                box_row.enabled = wm.NNumBillboards > 0
+                box_row.prop(wm, "FWidth", text = 'Width')
+                if wm.FWidth != main_coll["FWidth"]:
+                    wm.FWidth = main_coll["FWidth"]
+                
+                box_row = box.row()
+                box_row.enabled = wm.NNumBillboards > 0
+                box_row.prop(wm, "FTopPos", text = 'Top')
+                if wm.FTopPos != main_coll["FTopPos"]:
+                    wm.FTopPos = main_coll["FTopPos"]
+                
+                box_row = box.row()
+                box_row.enabled = wm.NNumBillboards > 0
+                box_row.prop(wm, "FBottomPos", text = 'Bottom')
+                if wm.FBottomPos != main_coll["FBottomPos"]:
+                    wm.FBottomPos = main_coll["FBottomPos"]
                     
-                    box_row = box.row()
-                    box_row.enabled = wm.NNumBillboards > 0 and wm.BUpdateBillboards
-                    box_row.prop(wm, "FTopPos", text = 'Top')
-                    if wm.FTopPos != bb_top:
-                        wm.FTopPos = bb_top
-                    
-                    box_row = box.row()
-                    box_row.enabled = wm.NNumBillboards > 0 and wm.BUpdateBillboards
-                    box_row.prop(wm, "FBottomPos", text = 'Bottom')
-                    if wm.FBottomPos != bb_bottom:
-                        wm.FBottomPos = bb_bottom
-                        
-                    box_row = box.row()
-                    box_row.enabled = wm.NNumBillboards > 0
-                    box_row.prop(wm, "BCutout", text = 'Use Cutout')
-                    if not re.findall('_cutout', str([x.name for x in bb_coll.objects])) or not ngroup.nodes['Cutout Diffuse UV'].outputs['Geometry'].links or not ngroup.nodes["Billboard Cutout"].inputs[0].default_value:
-                        wm.BCutout = False
-                    else:
-                        wm.BCutout = True
+                box_row = box.row()
+                box_row.enabled = wm.NNumBillboards > 0
+                box_row.prop(wm, "BCutout", text = 'Use Cutout')
+                if wm.BCutout != main_coll["BCutout"]:
+                    wm.BCutout = main_coll["BCutout"]
                      
                 row = layout.row()
                 box = row.box()
                 box_row = box.row()
                 box_row.label(text="Horizontal Billboard")
                 box_row = box.row()
-                box_row.enabled = wm.BUpdateBillboards
                 box_row.prop(wm, "BHorizontalBillboard", text = "Is Present")
-                if not horiz_coll:
-                    wm.BHorizontalBillboard = False
-                elif not horiz_coll.objects:
-                    wm.BHorizontalBillboard = False
-                else:
-                    wm.BHorizontalBillboard = True
-                    obj = horiz_coll.objects[0]
-                    verts = obj.data.vertices
-                    bb_height = np.mean([verts[0].co[2], verts[2].co[2]])
-                    bb_size = verts[2].co[0] - verts[0].co[0]
+                if wm.BHorizontalBillboard != main_coll["BHorizontalBillboard"]:
+                    wm.BHorizontalBillboard = main_coll["BHorizontalBillboard"]
                     
-                    box_row = box.row()
-                    box_row.enabled = wm.BHorizontalBillboard and wm.BUpdateBillboards
-                    box_row.prop(wm, "FHeight", text = 'Height')
-                    if wm.FHeight != bb_height:
-                        wm.FHeight = bb_height
-                        
-                    box_row = box.row()
-                    box_row.enabled = wm.BHorizontalBillboard and wm.BUpdateBillboards
-                    box_row.prop(wm, "FSize", text = 'Size')
-                    if wm.FSize != bb_size:
-                        wm.FSize = bb_size
+                box_row = box.row()
+                box_row.enabled = wm.BHorizontalBillboard
+                box_row.prop(wm, "FHeight", text = 'Height')
+                if wm.FHeight != main_coll["FHeight"]:
+                    wm.FHeight = main_coll["FHeight"]
                     
-                if bb_coll or horiz_coll:
-                    row = layout.row()
-                    box = row.box()
-                    box.enabled = wm.NNumBillboards > 0 or len(horiz_coll.objects) > 0
+                box_row = box.row()
+                box_row.enabled = wm.BHorizontalBillboard
+                box_row.prop(wm, "FSize", text = 'Size')
+                if wm.FSize != main_coll["FSize"]:
+                    wm.FSize = main_coll["FSize"]
+                    
+                row = layout.row()
+                box = row.box()
+                box.enabled = wm.NNumBillboards > 0 or wm.BHorizontalBillboard
+                box_row = box.row()
+                box_row.label(text="Billboard Texture Generation")
+                box_row = box.row()
+                box_row.prop(wm, "IBillboardTextureResolution", text="Resolution")
+                box_row = box.row()
+                box_row.prop(wm, "IBillboardTextureMargin", text = "Margin")
+                box_row = box.row()
+                box_row.prop(wm, "IBillboardTextureDilation", text = "Dilation")
+                box_row = box.row()
+                box_row.prop(wm, "EBillboardTextureFormat", text="File Format")
+                if wm.EBillboardTextureFormat == 'DDS':
                     box_row = box.row()
-                    box_row.label(text="Billboard Texture Generation")
-                    box_row = box.row()
-                    box_row.prop(wm, "IBillboardTextureResolution", text="Resolution")
-                    box_row = box.row()
-                    box_row.prop(wm, "IBillboardTextureMargin", text = "Margin")
-                    box_row = box.row()
-                    box_row.prop(wm, "IBillboardTextureDilation", text = "Dilation")
-                    box_row = box.row()
-                    box_row.prop(wm, "EBillboardTextureFormat", text="File Format")
-                    if wm.EBillboardTextureFormat == 'DDS':
-                        box_row = box.row()
-                        box_row.prop(wm, "EDxgiFormat")
-                    box_row = box.row()
-                    box_row.prop(wm, "BApplyBillboardTexture", text="Apply Generated Textures")
-                    box_row = box.row()
-                    box_row.prop(wm, "BUseCustomOutputBillboardTexture", text="Use Custom Output Path")
-                    box_row = box.row()
-                    box_row.enabled = wm.BUseCustomOutputBillboardTexture
-                    box_row.prop(wm, "SOutputBillboardTexture", text="Output Path")
-                    box_row = box.row()
-                    box_row.operator(SRTBillboardTextureGeneration.bl_idname, text = "Generate Texture", icon = "TEXTURE")
+                    box_row.prop(wm, "EDxgiFormat")
+                box_row = box.row()
+                box_row.prop(wm, "BApplyBillboardTexture", text="Apply Generated Textures")
+                box_row = box.row()
+                box_row.prop(wm, "BUseCustomOutputBillboardTexture", text="Use Custom Output Path")
+                box_row = box.row()
+                box_row.enabled = wm.BUseCustomOutputBillboardTexture
+                box_row.prop(wm, "SOutputBillboardTexture", text="Output Path")
+                box_row = box.row()
+                box_row.operator(SRTBillboardTextureGeneration.bl_idname, text = "Generate Texture", icon = "TEXTURE")
             
         return
 
-def updateVerticalBillboards(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+def updateNNumBillboards(self, context):
+    main_coll = GetCollection(make_active=True)  
+    if main_coll:
+        main_coll["NNumBillboards"] = self.NNumBillboards
         bb_objects = None
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll: 
@@ -195,7 +162,9 @@ def updateVerticalBillboards(self, context):
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
         
 def updateFWidth(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=False)     
+    if main_coll:
+        main_coll["FWidth"] = self.FWidth
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             right = self.FWidth * 0.5
@@ -211,7 +180,9 @@ def updateFWidth(self, context):
                 attrib_data[0].vector = attrib_data[0].vector #Update the mesh
         
 def updateFTopPos(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["FTopPos"] = self.FTopPos
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             pos_array = np.zeros(12)
@@ -224,7 +195,9 @@ def updateFTopPos(self, context):
                 attrib_data[0].vector = attrib_data[0].vector #Update the mesh
             
 def updateFBottomPos(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["FBottomPos"] = self.FBottomPos
         bb_coll = GetCollection("Vertical Billboards", make_active=False)
         if bb_coll:
             pos_array = np.zeros(12)
@@ -237,29 +210,33 @@ def updateFBottomPos(self, context):
                 attrib_data[0].vector = attrib_data[0].vector #Update the mesh
                 
 def updateBCutout(self, context):
-    bb_coll = GetCollection("Vertical Billboards", make_active=False)
-                
-    if bb_coll:
-        bb_objects = re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects]))
-        if bb_objects:
-            ngroup = bb_coll.objects[bb_objects[0]].modifiers[0].node_group
-            if self.BCutout:
-                if not re.findall('_cutout', str([x.name for x in bb_coll.objects])):
-                    obj = bb_coll.objects[bb_objects[0]]
-                    selectOnly(obj)
-                    bpy.ops.object.duplicate()
-                    obj.name = 'Mesh_cutout'
-                    obj.modifiers.remove(obj.modifiers[0])
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["BCutout"] = self.BCutout
+        bb_coll = GetCollection("Vertical Billboards", make_active=False)       
+        if bb_coll:
+            bb_objects = re.findall(r"Mesh_billboard\d+\.?\d*", str([x.name for x in bb_coll.objects]))
+            if bb_objects:
+                ngroup = bb_coll.objects[bb_objects[0]].modifiers[0].node_group
+                if self.BCutout:
+                    if not re.findall('_cutout', str([x.name for x in bb_coll.objects])):
+                        obj = bb_coll.objects[bb_objects[0]]
+                        selectOnly(obj)
+                        bpy.ops.object.duplicate()
+                        obj.name = 'Mesh_cutout'
+                        obj.modifiers.remove(obj.modifiers[0])
+                        
+                    ngroup.nodes["Billboard Cutout"].inputs[0].default_value = bb_coll.objects[re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))[0]]
+                    ngroup.links.new(ngroup.nodes["Cutout Diffuse UV"].outputs['Geometry'], ngroup.nodes["Group Output"].inputs['Geometry'])
                     
-                ngroup.nodes["Billboard Cutout"].inputs[0].default_value = bb_coll.objects[re.findall(r"Mesh_cutout\.?\d*", str([x.name for x in bb_coll.objects]))[0]]
-                ngroup.links.new(ngroup.nodes["Cutout Diffuse UV"].outputs['Geometry'], ngroup.nodes["Group Output"].inputs['Geometry'])
-                
-            else:
-                ngroup.nodes["Billboard Cutout"].inputs[0].default_value = None
-                ngroup.links.new(ngroup.nodes["Group Input"].outputs['Geometry'], ngroup.nodes["Group Output"].inputs['Geometry'])
+                else:
+                    ngroup.nodes["Billboard Cutout"].inputs[0].default_value = None
+                    ngroup.links.new(ngroup.nodes["Group Input"].outputs['Geometry'], ngroup.nodes["Group Output"].inputs['Geometry'])
             
 def updateBHorizontalBillboard(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=True)  
+    if main_coll:
+        main_coll["BHorizontalBillboard"] = self.BHorizontalBillboard
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
                     
         if self.BHorizontalBillboard:
@@ -273,7 +250,9 @@ def updateBHorizontalBillboard(self, context):
                 bpy.data.collections.remove(bb_coll, do_unlink=True)
                 
 def updateFHeight(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["FHeight"] = self.FHeight
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
         if bb_coll and bb_coll.objects:
             pos_array = np.zeros(12)
@@ -285,7 +264,9 @@ def updateFHeight(self, context):
             attrib_data[0].vector = attrib_data[0].vector #Update the mesh
             
 def updateFSize(self, context):
-    if context.window_manager.speedtree.BUpdateBillboards:
+    main_coll = GetCollection(make_active=False)  
+    if main_coll:
+        main_coll["FSize"] = self.FSize
         bb_coll = GetCollection("Horizontal Billboard", make_active=False)
         right = self.FSize * 0.5
         left = -right
@@ -303,7 +284,7 @@ def updateFSize(self, context):
 PROPS_Billboard_Panel = [
 ("NNumBillboards", IntProperty(
         name = "Number of Vertical Billboards",
-        update = updateVerticalBillboards,
+        update = updateNNumBillboards,
         default = 0,
         min = 0
     )),
@@ -353,10 +334,6 @@ PROPS_Billboard_Panel = [
         precision = 4,
         min = 0,
         subtype="DISTANCE"
-    )),
-("BUpdateBillboards", BoolProperty(
-        name = "Enable/disable Billboards Updating",
-        default = False
     )),
 ("IBillboardTextureResolution", IntProperty(
         name = "X Resolution of the Generated Billboard Textures",

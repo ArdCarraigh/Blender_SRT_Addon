@@ -31,44 +31,43 @@ class SpeedTreeMaterialPanel(bpy.types.Panel):
         if wm.SpeedTreeSubPanel == 'material':
             
             layout = self.layout
-            me = context.active_object
-            if me:
-                mesh = me.data
-                if "SpeedTreeTag" in mesh:
-                    if mesh.materials:
-                        mat = me.active_material
-                        row = layout.row()
-                        row.template_list("SPEEDTREE_UL_materials", "", me, "material_slots", me, "active_material_index", rows=3)
-                
-                        row = layout.row(align=True)  
-                        row.prop(wm, "BBranchesPresent", text = "Branches", toggle=True)
-                        if wm.BBranchesPresent != mat["BBranchesPresent"]:
-                            wm.BBranchesPresent = mat["BBranchesPresent"]
+            obj = context.active_object
+            if obj:
+                if "SpeedTreeTag" in obj and obj.data.materials:
+                    mat = obj.active_material
+                    
+                    row = layout.row()
+                    row.template_list("SPEEDTREE_UL_materials", "", obj, "material_slots", obj, "active_material_index", rows=3)
+            
+                    row = layout.row(align=True)  
+                    row.prop(wm, "BBranchesPresent", text = "Branches", toggle=True)
+                    if wm.BBranchesPresent != mat["BBranchesPresent"]:
+                        wm.BBranchesPresent = mat["BBranchesPresent"]
+                    
+                    row.prop(wm, "BFrondsPresent", text = "Fronds",toggle=True)
+                    if wm.BFrondsPresent != mat["BFrondsPresent"]:
+                        wm.BFrondsPresent = mat["BFrondsPresent"]
+                    
+                    row.prop(wm, "BLeavesPresent", text = "Leaves", toggle=True)
+                    if wm.BLeavesPresent != mat["BLeavesPresent"]:
+                        wm.BLeavesPresent = mat["BLeavesPresent"]
                         
-                        row.prop(wm, "BFrondsPresent", text = "Fronds",toggle=True)
-                        if wm.BFrondsPresent != mat["BFrondsPresent"]:
-                            wm.BFrondsPresent = mat["BFrondsPresent"]
+                    row.prop(wm, "BFacingLeavesPresent", text = "Facing Leaves", toggle=True)
+                    if wm.BFacingLeavesPresent != mat["BFacingLeavesPresent"]:
+                        wm.BFacingLeavesPresent = mat["BFacingLeavesPresent"]
                         
-                        row.prop(wm, "BLeavesPresent", text = "Leaves", toggle=True)
-                        if wm.BLeavesPresent != mat["BLeavesPresent"]:
-                            wm.BLeavesPresent = mat["BLeavesPresent"]
-                            
-                        row.prop(wm, "BFacingLeavesPresent", text = "Facing Leaves", toggle=True)
-                        if wm.BFacingLeavesPresent != mat["BFacingLeavesPresent"]:
-                            wm.BFacingLeavesPresent = mat["BFacingLeavesPresent"]
-                            
-                        row.prop(wm, "BRigidMeshesPresent", text = "Rigid Meshes", toggle=True)
-                        if wm.BRigidMeshesPresent != mat["BRigidMeshesPresent"]:
-                            wm.BRigidMeshesPresent = mat["BRigidMeshesPresent"]
-                        
-                        layout.separator()  
-                        row = layout.row(align = True)
-                        row.alignment = "CENTER"
-                        row.scale_x = 1.44
-                        row.scale_y = 1.4
-                        row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'texture')
-                        row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'colorset')
-                        row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'other')
+                    row.prop(wm, "BRigidMeshesPresent", text = "Rigid Meshes", toggle=True)
+                    if wm.BRigidMeshesPresent != mat["BRigidMeshesPresent"]:
+                        wm.BRigidMeshesPresent = mat["BRigidMeshesPresent"]
+                    
+                    layout.separator()  
+                    row = layout.row(align = True)
+                    row.alignment = "CENTER"
+                    row.scale_x = 1.44
+                    row.scale_y = 1.4
+                    row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'texture')
+                    row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'colorset')
+                    row.prop_enum(wm, "SpeedTreeMaterialSubPanel", 'other')
                         
         return
     
@@ -86,87 +85,78 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'texture':
             
             layout = self.layout
-            me = context.active_object
-            if me:
-                mesh = me.data
-                if "SpeedTreeTag" in mesh:
-                    if mesh.materials:
-                        mat = me.active_material
-                        nodes = mat.node_tree.nodes
+            obj = context.active_object
+            if obj:
+                if "SpeedTreeTag" in obj and obj.data.materials:
+                    mat = obj.active_material
+                    
+                    #Diffuse
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="Diffuse Texture")
+                    box.template_ID(wm, "diffuseTexture", new="image.new", open="image.open")
+                    if wm.diffuseTexture != mat["diffuseTexture"]:
+                        wm.diffuseTexture = mat["diffuseTexture"]
                         
-                        #Diffuse
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text="Diffuse Texture")
-                        box.template_ID(wm, "diffuseTexture", new="image.new", open="image.open")
-                        if wm.diffuseTexture != nodes["Diffuse Texture"].image:
-                            wm.diffuseTexture = nodes["Diffuse Texture"].image
+                    box.prop(wm, "BDiffuseAlphaMaskIsOpaque", text = "Alpha Mask Opaque")
+                    if wm.BDiffuseAlphaMaskIsOpaque != mat["BDiffuseAlphaMaskIsOpaque"]:
+                        wm.BDiffuseAlphaMaskIsOpaque = mat["BDiffuseAlphaMaskIsOpaque"]
+                                   
+                    #Normal
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="Normal Texture")
+                    box.template_ID(wm, "normalTexture", new="image.new", open="image.open")
+                    if wm.normalTexture != mat["normalTexture"]:
+                        wm.normalTexture = mat["normalTexture"]
                             
-                        box.prop(wm, "BDiffuseAlphaMaskIsOpaque", text = "Alpha Mask Opaque")
-                        if nodes['Mix Diffuse Alpha Seam Blending'].outputs['Color'].links:
-                            wm.BDiffuseAlphaMaskIsOpaque = False
-                        else:
-                            wm.BDiffuseAlphaMaskIsOpaque = True
-                                       
-                        #Normal
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text="Normal Texture")
-                        box.template_ID(wm, "normalTexture", new="image.new", open="image.open")
-                        if wm.normalTexture != nodes["Normal Texture"].image:
-                            wm.normalTexture = nodes["Normal Texture"].image
-                                
-                        #Specular
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text="Specular Texture")
-                        box.template_ID(wm, "specularTexture", new="image.new", open="image.open")
-                        if wm.specularTexture != nodes["Specular Texture"].image:
-                            wm.specularTexture = nodes["Specular Texture"].image
+                    #Specular
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="Specular Texture")
+                    box.template_ID(wm, "specularTexture", new="image.new", open="image.open")
+                    if wm.specularTexture != mat["specularTexture"]:
+                        wm.specularTexture = mat["specularTexture"]
+                    
+                    #Branch Seam
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text = "Branch Seam Smoothing")
+                    box.enabled = wm.BBranchesPresent
+                    box.prop(wm, "EBranchSeamSmoothing", text = "")
+                    if wm.EBranchSeamSmoothing != mat["EBranchSeamSmoothing"]:
+                        wm.EBranchSeamSmoothing = mat["EBranchSeamSmoothing"]
+                         
+                    box_row = box.row()
+                    box_row.enabled = wm.EBranchSeamSmoothing in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "FBranchSeamWeight", text = "Branch Seam Weight")
+                    if wm.FBranchSeamWeight != mat["FBranchSeamWeight"]:
+                        wm.FBranchSeamWeight = mat["FBranchSeamWeight"]
                         
-                        #Branch Seam
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text = "Branch Seam Smoothing")
-                        box.enabled = wm.BBranchesPresent
-                        box.prop(wm, "EBranchSeamSmoothing", text = "")
-                        if wm.EBranchSeamSmoothing != mat["EBranchSeamSmoothing"]:
-                            wm.EBranchSeamSmoothing = mat["EBranchSeamSmoothing"]
-                        if len(nodes['Branch Seam Weight Mult'].outputs['Value'].links) != 10:
-                            wm.EBranchSeamSmoothing = 'OFF'
-                             
-                        box_row = box.row()
-                        box_row.enabled = wm.EBranchSeamSmoothing in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "FBranchSeamWeight", text = "Branch Seam Weight")
-                        if wm.FBranchSeamWeight != nodes["Branch Seam Weight"].outputs["Value"].default_value:
-                            wm.FBranchSeamWeight = nodes["Branch Seam Weight"].outputs["Value"].default_value
-                            
-                        #Detail Layer
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text = "Detail Layer")
-                        box.enabled = wm.BBranchesPresent
-                        box.prop(wm, "EDetailLayer", text = "")
-                        if wm.EDetailLayer != mat["EDetailLayer"]:
-                            wm.EDetailLayer = mat["EDetailLayer"]
-                        if not nodes['Mix Detail Diffuse'].inputs["Fac"].links or not nodes['Mix Detail Normal'].inputs["Fac"].links:
-                            wm.EDetailLayer = 'OFF'
+                    #Detail Layer
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text = "Detail Layer")
+                    box.enabled = wm.BBranchesPresent
+                    box.prop(wm, "EDetailLayer", text = "")
+                    if wm.EDetailLayer != mat["EDetailLayer"]:
+                        wm.EDetailLayer = mat["EDetailLayer"]
+                    
+                    box_row = box.row()
+                    box_row.label(text = "Detail Texture")
+                    box_row = box.row()
+                    box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
+                    box_row.template_ID(wm, "detailTexture", new="image.new", open="image.open")
+                    if wm.detailTexture != mat["detailTexture"]:
+                        wm.detailTexture = mat["detailTexture"]
                         
-                        box_row = box.row()
-                        box_row.label(text = "Detail Texture")
-                        box_row = box.row()
-                        box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
-                        box_row.template_ID(wm, "detailTexture", new="image.new", open="image.open")
-                        if wm.detailTexture != nodes["Detail Texture"].image:
-                            wm.detailTexture = nodes["Detail Texture"].image
-                            
-                        box_row = box.row()
-                        box_row.label(text = "Detail Normal Texture")
-                        box_row = box.row()
-                        box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
-                        box_row.template_ID(wm, "detailNormalTexture", new="image.new", open="image.open")
-                        if wm.detailNormalTexture != nodes["Detail Normal Texture"].image:
-                            wm.detailNormalTexture = nodes["Detail Normal Texture"].image
+                    box_row = box.row()
+                    box_row.label(text = "Detail Normal Texture")
+                    box_row = box.row()
+                    box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
+                    box_row.template_ID(wm, "detailNormalTexture", new="image.new", open="image.open")
+                    if wm.detailNormalTexture != mat["detailNormalTexture"]:
+                        wm.detailNormalTexture = mat["detailNormalTexture"]
                                
         return
     
@@ -184,119 +174,108 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'colorset':
             
             layout = self.layout
-            me = context.active_object
-            if me:
-                mesh = me.data
-                if "SpeedTreeTag" in mesh:
-                    if mesh.materials:
-                        mat = me.active_material
-                        nodes = mat.node_tree.nodes
+            obj = context.active_object
+            if obj:
+                if "SpeedTreeTag" in obj and obj.data.materials:
+                    mat = obj.active_material
+                    
+                    # Diffuse Color
+                    row = layout.row()
+                    box = row.box()
+                    box_row = box.row()
+                    box_row.label(text="Diffuse Color")
+                    box_row.prop(wm, "VDiffuseColor", text = "")
+                    if wm.VDiffuseColor != mat["VDiffuseColor"]:
+                        wm.VDiffuseColor = mat["VDiffuseColor"]
                         
-                        # Diffuse Color
-                        row = layout.row()
-                        box = row.box()
-                        box_row = box.row()
-                        box_row.label(text="Diffuse Color")
-                        box_row.prop(wm, "VDiffuseColor", text = "")
-                        if wm.VDiffuseColor != nodes["Diffuse Color"].outputs["Color"].default_value:
-                            wm.VDiffuseColor = nodes["Diffuse Color"].outputs["Color"].default_value
-                            
-                        box.prop(wm, "FDiffuseScalar", text = "Diffuse Scalar")
-                        if wm.FDiffuseScalar != nodes["Diffuse Scalar"].outputs["Value"].default_value:
-                            wm.FDiffuseScalar = nodes["Diffuse Scalar"].outputs["Value"].default_value
-                            
-                        #Ambient Color
-                        row = layout.row()
-                        box = row.box()
-                        box_row = box.row()
-                        box_row.label(text="Ambient Color")
-                        box_row.prop(wm, "VAmbientColor", text = '')
-                        if wm.VAmbientColor != nodes["Ambient Color"].outputs["Color"].default_value:
-                            wm.VAmbientColor = nodes["Ambient Color"].outputs["Color"].default_value
+                    box.prop(wm, "FDiffuseScalar", text = "Diffuse Scalar")
+                    if wm.FDiffuseScalar != mat["FDiffuseScalar"]:
+                        wm.FDiffuseScalar = mat["FDiffuseScalar"]
                         
-                        box_row = box.row()
-                        box_row.label(text = "Ambient Contrast")
-                        box_row = box.row()
-                        box_row.prop(wm, "EAmbientContrast", text = "")
-                        if wm.EAmbientContrast != mat["EAmbientContrast"]:
-                            wm.EAmbientContrast = mat["EAmbientContrast"]
-                        if not nodes['Ambient Color Final'].inputs[7].links or not nodes["Mix Shadow Contrast"].inputs[7].links:
-                            wm.EAmbientContrast = 'OFF'
+                    #Ambient Color
+                    row = layout.row()
+                    box = row.box()
+                    box_row = box.row()
+                    box_row.label(text="Ambient Color")
+                    box_row.prop(wm, "VAmbientColor", text = '')
+                    if wm.VAmbientColor != mat["VAmbientColor"]:
+                        wm.VAmbientColor = mat["VAmbientColor"]
+                    
+                    box_row = box.row()
+                    box_row.label(text = "Ambient Contrast")
+                    box_row = box.row()
+                    box_row.prop(wm, "EAmbientContrast", text = "")
+                    if wm.EAmbientContrast != mat["EAmbientContrast"]:
+                        wm.EAmbientContrast = mat["EAmbientContrast"]
+                    
+                    box_row = box.row()
+                    box_row.enabled = wm.EAmbientContrast in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "FAmbientContrastFactor", text = 'Ambient Contrast Factor')
+                    if wm.FAmbientContrastFactor != mat["FAmbientContrastFactor"]:
+                        wm.FAmbientContrastFactor = mat["FAmbientContrastFactor"]
                         
-                        box_row = box.row()
-                        box_row.enabled = wm.EAmbientContrast in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "FAmbientContrastFactor", text = 'Ambient Contrast Factor')
-                        if wm.FAmbientContrastFactor != nodes["Ambient Contrast Factor"].outputs["Value"].default_value:
-                            wm.FAmbientContrastFactor = nodes["Ambient Contrast Factor"].outputs["Value"].default_value
-                            
-                        #Specular Color
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text='Specular')
-                        box.prop(wm, "ESpecular", text = "")
-                        if wm.ESpecular != mat["ESpecular"]:
-                            wm.ESpecular = mat["ESpecular"]
-                        if not nodes['Specular BSDF'].inputs['Roughness'].links or not nodes['Specular BSDF'].inputs['Specular'].links:
-                            wm.ESpecular = 'OFF'
-                            
-                        box_row = box.row()
-                        box_row.label(text="Specular Color")
-                        box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "VSpecularColor", text = '')
-                        if wm.VSpecularColor!= nodes["Specular Color"].outputs["Color"].default_value:
-                            wm.VSpecularColor = nodes["Specular Color"].outputs["Color"].default_value
-                            
-                        box_row = box.row()
-                        box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "FShininess", text = 'Shininess')
-                        if wm.FShininess != nodes["Shininess"].outputs["Value"].default_value:
-                            wm.FShininess = nodes["Shininess"].outputs["Value"].default_value
-                            
-                        #Transmission Color
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text='Transmission')
-                        box.prop(wm, "ETransmission", text = "")
-                        if wm.ETransmission != mat["ETransmission"]:
-                            wm.ETransmission = mat["ETransmission"]
-                        if  not nodes["Mix Transmission Color"].inputs["Factor"].links or not nodes["Invert Transmission Mask"].inputs["Color"].links or not nodes["Mix Transmission Final"].inputs[0].links:
-                            wm.ETransmission = 'OFF'
-                            
-                        box_row = box.row()
-                        box_row.label(text="Transmission Color")
-                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "VTransmissionColor", text = '')
-                        if wm.VTransmissionColor!= nodes["Transmission Color"].outputs["Color"].default_value:
-                            wm.VTransmissionColor = nodes["Transmission Color"].outputs["Color"].default_value
-                            
-                        box_row = box.row()
-                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "FTransmissionViewDependency", text = 'View Influence')
-                        if wm.FTransmissionViewDependency != nodes["Transmission View Dependency"].outputs["Value"].default_value:
-                            wm.FTransmissionViewDependency = nodes["Transmission View Dependency"].outputs["Value"].default_value
-                            
-                        box_row = box.row()
-                        box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
-                        box_row.prop(wm, "FTransmissionShadowBrightness", text = 'Shadow Brightness')
-                        if wm.FTransmissionShadowBrightness != nodes["Transmission Shadow Brightness"].outputs["Value"].default_value:
-                            wm.FTransmissionShadowBrightness = nodes["Transmission Shadow Brightness"].outputs["Value"].default_value
-                            
-                        #Visibility
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text='Visibility')
-                        box.prop(wm, "FAlphaScalar", text = "Alpha Scalar")
-                        if wm.FAlphaScalar != nodes["Alpha Scalar"].outputs["Value"].default_value:
-                            wm.FAlphaScalar = nodes["Alpha Scalar"].outputs["Value"].default_value
+                    #Specular Color
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text='Specular')
+                    box.prop(wm, "ESpecular", text = "")
+                    if wm.ESpecular != mat["ESpecular"]:
+                        wm.ESpecular = mat["ESpecular"]
                         
-                        box_row = box.row()
-                        box_row.label(text="Culling Method")
-                        box_row = box.row()
-                        box_row.prop(wm, "EFaceCulling", text = "")
-                        if wm.EFaceCulling != mat["EFaceCulling"]:
-                            wm.EFaceCulling = mat["EFaceCulling"]
-                        if mat.use_backface_culling:
-                            wm.EFaceCulling = 'BACK'
+                    box_row = box.row()
+                    box_row.label(text="Specular Color")
+                    box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "VSpecularColor", text = '')
+                    if wm.VSpecularColor != mat["VSpecularColor"]:
+                        wm.VSpecularColor = mat["VSpecularColor"]
+                        
+                    box_row = box.row()
+                    box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "FShininess", text = 'Shininess')
+                    if wm.FShininess != mat["FShininess"]:
+                        wm.FShininess = mat["FShininess"]
+                        
+                    #Transmission Color
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text='Transmission')
+                    box.prop(wm, "ETransmission", text = "")
+                    if wm.ETransmission != mat["ETransmission"]:
+                        wm.ETransmission = mat["ETransmission"]
+                        
+                    box_row = box.row()
+                    box_row.label(text="Transmission Color")
+                    box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "VTransmissionColor", text = '')
+                    if wm.VTransmissionColor != mat["VTransmissionColor"]:
+                        wm.VTransmissionColor = mat["VTransmissionColor"]
+                        
+                    box_row = box.row()
+                    box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "FTransmissionViewDependency", text = 'View Influence')
+                    if wm.FTransmissionViewDependency != mat["FTransmissionViewDependency"]:
+                        wm.FTransmissionViewDependency = mat["FTransmissionViewDependency"]
+                        
+                    box_row = box.row()
+                    box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
+                    box_row.prop(wm, "FTransmissionShadowBrightness", text = 'Shadow Brightness')
+                    if wm.FTransmissionShadowBrightness != mat["FTransmissionShadowBrightness"]:
+                        wm.FTransmissionShadowBrightness = mat["FTransmissionShadowBrightness"]
+                        
+                    #Visibility
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text='Visibility')
+                    box.prop(wm, "FAlphaScalar", text = "Alpha Scalar")
+                    if wm.FAlphaScalar != mat["FAlphaScalar"]:
+                        wm.FAlphaScalar = mat["FAlphaScalar"]
+                    
+                    box_row = box.row()
+                    box_row.label(text="Culling Method")
+                    box_row = box.row()
+                    box_row.prop(wm, "EFaceCulling", text = "")
+                    if wm.EFaceCulling != mat["EFaceCulling"]:
+                        wm.EFaceCulling = mat["EFaceCulling"]
                             
         return
     
@@ -314,401 +293,296 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
         if wm.SpeedTreeSubPanel == 'material' and wm.SpeedTreeMaterialSubPanel == 'other':
             
             layout = self.layout
-            me = context.active_object
-            if me:
-                mesh = me.data
-                if "SpeedTreeTag" in mesh:
-                    if mesh.materials:
-                        mat = me.active_material
-                        nodes = mat.node_tree.nodes
+            obj = context.active_object
+            if obj:
+                if "SpeedTreeTag" in obj and obj.data.materials:
+                    mat = obj.active_material
+                    
+                    #Supported
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="Supported")
+                    box.prop(wm, "BAmbientOcclusion", text = "Ambient Occlusion")
+                    if wm.BAmbientOcclusion != mat["BAmbientOcclusion"]:
+                        wm.BAmbientOcclusion = mat["BAmbientOcclusion"]
                         
-                        #Supported
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text="Supported")
-                        box.prop(wm, "BAmbientOcclusion", text = "Ambient Occlusion")
-                        if nodes["Ambient Occlusion Mix"].inputs[7].links:
-                            wm.BAmbientOcclusion = True
-                        else:
-                            wm.BAmbientOcclusion = False
-                            
-                        box.prop(wm, "BCastsShadows", text = "Cast Shadow")
-                        if nodes['Disable Shadow'].inputs[0].links:
-                            wm.BCastsShadows = False
-                        else:
-                            wm.BCastsShadows = True
-                            
-                        #Not Supported
-                        row = layout.row()
-                        box = row.box()
-                        box.label(text="Not Supported")
+                    box.prop(wm, "BCastsShadows", text = "Cast Shadow")
+                    if wm.BCastsShadows != mat["BCastsShadows"]:
+                        wm.BCastsShadows = mat["BCastsShadows"]
                         
-                        box.prop(wm, "BBlending", text = "Blending")
-                        if wm.BBlending != mat["BBlending"]:
-                            wm.BBlending = mat["BBlending"]
-                            
-                        box.prop(wm, "BReceivesShadows", text = "Receive Shadow")
-                        if wm.BReceivesShadows != mat["BReceivesShadows"]:
-                            wm.BReceivesShadows = mat["BReceivesShadows"]
-                            
-                        box.prop(wm, "BShadowSmoothing", text = "Shadow Smoothing")
-                        if wm.BShadowSmoothing != mat["BShadowSmoothing"]:
-                            wm.BShadowSmoothing = mat["BShadowSmoothing"]
+                    #Not Supported
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="Not Supported")
+                    
+                    box.prop(wm, "BBlending", text = "Blending")
+                    if wm.BBlending != mat["BBlending"]:
+                        wm.BBlending = mat["BBlending"]
                         
-                        box_row = box.row()
-                        box_row.label(text="Fog Curve")    
-                        box_row = box.row()
-                        box_row.prop(wm, "EFogCurve", text = '')
-                        if wm.EFogCurve!= mat["EFogCurve"]:
-                            wm.EFogCurve = mat["EFogCurve"]
+                    box.prop(wm, "BReceivesShadows", text = "Receive Shadow")
+                    if wm.BReceivesShadows != mat["BReceivesShadows"]:
+                        wm.BReceivesShadows = mat["BReceivesShadows"]
                         
-                        box_row = box.row()
-                        box_row.label(text="Fog Curve Style")  
-                        box_row = box.row()
-                        box_row.prop(wm, "EFogColorStyle", text = '')
-                        if wm.EFogColorStyle!= mat["EFogColorStyle"]:
-                            wm.EFogColorStyle = mat["EFogColorStyle"]
+                    box.prop(wm, "BShadowSmoothing", text = "Shadow Smoothing")
+                    if wm.BShadowSmoothing != mat["BShadowSmoothing"]:
+                        wm.BShadowSmoothing = mat["BShadowSmoothing"]
+                    
+                    box_row = box.row()
+                    box_row.label(text="Fog Curve")    
+                    box_row = box.row()
+                    box_row.prop(wm, "EFogCurve", text = '')
+                    if wm.EFogCurve!= mat["EFogCurve"]:
+                        wm.EFogCurve = mat["EFogCurve"]
+                    
+                    box_row = box.row()
+                    box_row.label(text="Fog Curve Style")  
+                    box_row = box.row()
+                    box_row.prop(wm, "EFogColorStyle", text = '')
+                    if wm.EFogColorStyle!= mat["EFogColorStyle"]:
+                        wm.EFogColorStyle = mat["EFogColorStyle"]
+                    
+                    box_row = box.row()
+                    box_row.label(text="Wind LOD")      
+                    box_row = box.row()
+                    box_row.prop(wm, "EWindLod", text = '')
+                    if wm.EWindLod!= mat["EWindLod"]:
+                        wm.EWindLod = mat["EWindLod"]
+ 
+                    box_row = box.row()
+                    box_row.label(text="Ambient Image Lighting")
+                    box_row = box.row()
+                    box_row.prop(wm, "EAmbientImageLighting", text = '')
+                    if wm.EAmbientImageLighting!= mat["EAmbientImageLighting"]:
+                        wm.EAmbientImageLighting = mat["EAmbientImageLighting"]
                         
-                        box_row = box.row()
-                        box_row.label(text="Wind LOD")      
-                        box_row = box.row()
-                        box_row.prop(wm, "EWindLod", text = '')
-                        if wm.EWindLod!= mat["EWindLod"]:
-                            wm.EWindLod = mat["EWindLod"]
-     
-                        box_row = box.row()
-                        box_row.label(text="Ambient Image Lighting")
-                        box_row = box.row()
-                        box_row.prop(wm, "EAmbientImageLighting", text = '')
-                        if wm.EAmbientImageLighting!= mat["EAmbientImageLighting"]:
-                            wm.EAmbientImageLighting = mat["EAmbientImageLighting"]
-                            
-                        box_row = box.row()
-                        box_row.label(text="Hue Variation")
-                        box_row = box.row()
-                        box_row.prop(wm, "EHueVariation", text = '')
-                        if wm.EHueVariation!= mat["EHueVariation"]:
-                            wm.EHueVariation = mat["EHueVariation"]   
+                    box_row = box.row()
+                    box_row.label(text="Hue Variation")
+                    box_row = box.row()
+                    box_row.prop(wm, "EHueVariation", text = '')
+                    if wm.EHueVariation!= mat["EHueVariation"]:
+                        wm.EHueVariation = mat["EHueVariation"]   
 
         return
 
 def updateDiffuseTexture(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        nodes = ob.active_material.node_tree.nodes
-        nodes["Diffuse Texture"].image = self.diffuseTexture
-        nodes["Branch Seam Diffuse Texture"].image = self.diffuseTexture
-        if self.diffuseTexture:
-            nodes["Diffuse Texture"].image.colorspace_settings.name='sRGB'
-            nodes["Branch Seam Diffuse Texture"].image.colorspace_settings.name='sRGB'
+    mat = bpy.context.active_object.active_material
+    mat["diffuseTexture"] = self.diffuseTexture
+    nodes = mat.node_tree.nodes
+    nodes["Diffuse Texture"].image = self.diffuseTexture
+    nodes["Branch Seam Diffuse Texture"].image = self.diffuseTexture
+    if self.diffuseTexture:
+        nodes["Diffuse Texture"].image.colorspace_settings.name='sRGB'
+        nodes["Branch Seam Diffuse Texture"].image.colorspace_settings.name='sRGB'
                 
 def updateNormalTexture(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        nodes = ob.active_material.node_tree.nodes
-        nodes["Normal Texture"].image = self.normalTexture
-        nodes["Branch Seam Normal Texture"].image = self.normalTexture
-        if self.normalTexture:
-            nodes["Normal Texture"].image.colorspace_settings.name='Non-Color'
-            nodes["Branch Seam Normal Texture"].image.colorspace_settings.name='Non-Color'
+    mat = bpy.context.active_object.active_material
+    mat["normalTexture"] = self.normalTexture
+    nodes = mat.node_tree.nodes
+    nodes["Normal Texture"].image = self.normalTexture
+    nodes["Branch Seam Normal Texture"].image = self.normalTexture
+    if self.normalTexture:
+        nodes["Normal Texture"].image.colorspace_settings.name='Non-Color'
+        nodes["Branch Seam Normal Texture"].image.colorspace_settings.name='Non-Color'
                 
 def updateDetailTexture(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        nodes = ob.active_material.node_tree.nodes
-        nodes["Detail Texture"].image = self.detailTexture
-        nodes["Branch Seam Detail Texture"].image = self.detailTexture
-        if self.detailTexture:
-            nodes["Detail Texture"].image.colorspace_settings.name='sRGB'
-            nodes["Branch Seam Detail Texture"].image.colorspace_settings.name='sRGB'
+    mat = bpy.context.active_object.active_material
+    mat["detailTexture"] = self.detailTexture
+    nodes = mat.node_tree.nodes
+    nodes["Detail Texture"].image = self.detailTexture
+    nodes["Branch Seam Detail Texture"].image = self.detailTexture
+    if self.detailTexture:
+        nodes["Detail Texture"].image.colorspace_settings.name='sRGB'
+        nodes["Branch Seam Detail Texture"].image.colorspace_settings.name='sRGB'
                 
 def updateDetailNormalTexture(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        nodes = ob.active_material.node_tree.nodes
-        nodes["Detail Normal Texture"].image = self.detailNormalTexture
-        nodes["Branch Seam Detail Normal Texture"].image = self.detailNormalTexture
-        if self.detailNormalTexture:
-            nodes["Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
-            nodes["Branch Seam Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
+    mat = bpy.context.active_object.active_material
+    mat["detailNormalTexture"] = self.detailNormalTexture
+    nodes = mat.node_tree.nodes
+    nodes["Detail Normal Texture"].image = self.detailNormalTexture
+    nodes["Branch Seam Detail Normal Texture"].image = self.detailNormalTexture
+    if self.detailNormalTexture:
+        nodes["Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
+        nodes["Branch Seam Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
                 
 def updateSpecularTexture(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        nodes = ob.active_material.node_tree.nodes 
-        nodes["Specular Texture"].image = self.specularTexture
-        nodes["Branch Seam Specular Texture"].image = self.specularTexture
-        if self.specularTexture:
-            nodes["Specular Texture"].image.colorspace_settings.name='Non-Color'
-            nodes["Branch Seam Specular Texture"].image.colorspace_settings.name='Non-Color'
+    mat = bpy.context.active_object.active_material
+    mat["specularTexture"] = self.specularTexture
+    nodes = mat.node_tree.nodes 
+    nodes["Specular Texture"].image = self.specularTexture
+    nodes["Branch Seam Specular Texture"].image = self.specularTexture
+    if self.specularTexture:
+        nodes["Specular Texture"].image.colorspace_settings.name='Non-Color'
+        nodes["Branch Seam Specular Texture"].image.colorspace_settings.name='Non-Color'
             
 def updateVAmbientColor(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Ambient Color"].outputs["Color"].default_value = self.VAmbientColor
+    mat = bpy.context.active_object.active_material
+    mat["VAmbientColor"] = self.VAmbientColor
+    mat.node_tree.nodes["Ambient Color"].outputs["Color"].default_value = self.VAmbientColor
             
 def updateEAmbientContrast(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["EAmbientContrast"] = self.EAmbientContrast
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes['Ambient Color Final'].inputs[7]
-        input2 = nodes["Mix Shadow Contrast"].inputs[7]
-        while input1.links:
-            links.remove(input1.links[0])
-        while input2.links:
-            links.remove(input2.links[0])
-        if self.EAmbientContrast in ["OFF__X__ON", "ON"]:
-            links.new(nodes['Ambient Contrast'].outputs['Color'], input1)
-            links.new(nodes['Ambient Contrast'].outputs['Color'], input2)
+    mat = bpy.context.active_object.active_material
+    mat["EAmbientContrast"] = self.EAmbientContrast
+    nodes = mat.node_tree.nodes
+    if self.EAmbientContrast == "OFF":
+        nodes['Control Ambient Contrast'].inputs[1].default_value = 1
+    else:
+        nodes['Control Ambient Contrast'].inputs[1].default_value = 0
                 
 def updateFAmbientContrastFactor(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Ambient Contrast Factor"].outputs["Value"].default_value = self.FAmbientContrastFactor
+    mat = bpy.context.active_object.active_material
+    mat["FAmbientContrastFactor"] = self.FAmbientContrastFactor
+    mat.node_tree.nodes["Ambient Contrast Factor"].outputs["Value"].default_value = self.FAmbientContrastFactor
             
 def updateBAmbientOcclusion(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes["Ambient Occlusion Mix"].inputs[7]
-        while input1.links:
-            links.remove(input1.links[0])
-        if self.BAmbientOcclusion:
-            links.new(nodes["Ambient Occlusion Attribute"].outputs["Fac"], input1)
+    mat = bpy.context.active_object.active_material
+    mat["BAmbientOcclusion"] = self.BAmbientOcclusion
+    mat.node_tree.nodes['Control Ambient Occlusion'].inputs[1].default_value = not self.BAmbientOcclusion
                 
 def updateVDiffuseColor(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Diffuse Color"].outputs["Color"].default_value = self.VDiffuseColor
+    mat = bpy.context.active_object.active_material
+    mat["VDiffuseColor"] = self.VDiffuseColor
+    mat.node_tree.nodes["Diffuse Color"].outputs["Color"].default_value = self.VDiffuseColor
             
 def updateFDiffuseScalar(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Diffuse Scalar"].outputs["Value"].default_value = self.FDiffuseScalar
+    mat = bpy.context.active_object.active_material
+    mat["FDiffuseScalar"] = self.FDiffuseScalar
+    mat.node_tree.nodes["Diffuse Scalar"].outputs["Value"].default_value = self.FDiffuseScalar
             
 def updateBDiffuseAlphaMaskIsOpaque(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes['Alpha Scalar Mix'].inputs[6]
-        while input1.links:
-            links.remove(input1.links[0])
-        if not self.BDiffuseAlphaMaskIsOpaque:
-            links.new(nodes["Mix Diffuse Alpha Seam Blending"].outputs["Color"], input1)
+    mat = bpy.context.active_object.active_material
+    mat["BDiffuseAlphaMaskIsOpaque"] = self.BDiffuseAlphaMaskIsOpaque
+    mat.node_tree.nodes['Control Diffuse Mask Opaque'].inputs[1].default_value = self.BDiffuseAlphaMaskIsOpaque
                 
 def updateEDetailLayer(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["EDetailLayer"] = self.EDetailLayer
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes['Mix Detail Diffuse'].inputs["Fac"]
-        input2 = nodes['Mix Detail Normal'].inputs["Fac"]
-        while input1.links:
-            links.remove(input1.links[0])
-        while input2.links:
-            links.remove(input2.links[0])
-        if self.EDetailLayer in ["OFF__X__ON", "ON"]:
-            links.new(nodes["Mix Detail Alpha Seam Blending"].outputs["Color"], input1)
-            links.new(nodes['Mix Detail Normal Alpha Seam Blending'].outputs["Color"], input2)
+    mat = bpy.context.active_object.active_material
+    mat["EDetailLayer"] = self.EDetailLayer
+    nodes = mat.node_tree.nodes
+    if self.EDetailLayer == "OFF":
+        nodes['Control Diffuse Detail Layer'].inputs[1].default_value = 1
+        nodes['Control Normal Detail Layer'].inputs[1].default_value = 1
+    else:
+        nodes['Control Diffuse Detail Layer'].inputs[1].default_value = 0
+        nodes['Control Normal Detail Layer'].inputs[1].default_value = 0
                 
 def updateESpecular(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["ESpecular"] = self.ESpecular
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes['Specular BSDF'].inputs['Roughness']
-        input2 = nodes['Specular BSDF'].inputs['Specular']
-        while input1.links:
-            links.remove(input1.links[0])
-        while input2.links:
-            links.remove(input2.links[0])
-        if self.ESpecular in ["OFF__X__ON", "ON"]:
-            links.new(nodes["Mix Shininess"].outputs[2], input1)
-            links.new(nodes['Mix Specular'].outputs[2], input2)
+    mat = bpy.context.active_object.active_material
+    mat["ESpecular"] = self.ESpecular
+    nodes = mat.node_tree.nodes
+    if self.ESpecular == "OFF":
+        nodes['Control Specular'].inputs[0].default_value = 1
+        nodes['Control Shininess'].inputs[1].default_value = 1
+    else:
+        nodes['Control Specular'].inputs[0].default_value = 0
+        nodes['Control Shininess'].inputs[1].default_value = 0
                 
 def updateFShininess(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Shininess"].outputs["Value"].default_value = self.FShininess
+    mat = bpy.context.active_object.active_material
+    mat["FShininess"] = self.FShininess
+    mat.node_tree.nodes["Shininess"].outputs["Value"].default_value = self.FShininess
             
 def updateVSpecularColor(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Specular Color"].outputs["Color"].default_value = self.VSpecularColor
+    mat = bpy.context.active_object.active_material
+    mat["VSpecularColor"] = self.VSpecularColor
+    mat.node_tree.nodes["Specular Color"].outputs["Color"].default_value = self.VSpecularColor
             
 def updateETransmission(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["ETransmission"] = self.ETransmission
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes["Mix Transmission Color"].inputs["Factor"]
-        input2 = nodes["Invert Transmission Mask"].inputs["Color"]
-        input3 = nodes["Mix Transmission Final"].inputs[0]
-        while input1.links:
-            links.remove(input1.links[0])
-        while input2.links:
-            links.remove(input2.links[0])
-        while input3.links:
-            links.remove(input3.links[0])
-        if self.ETransmission in ["OFF__X__ON", "ON"]:
-            links.new(nodes["Mix Specular Alpha Seam Blending"].outputs["Color"], input1)
-            links.new(nodes["Mix Transmission Mask"].outputs[2], input2)
-            links.new(nodes["Mix Transmission Pre Final"].outputs[2], input3)
+    mat = bpy.context.active_object.active_material
+    mat["ETransmission"] = self.ETransmission
+    nodes = mat.node_tree.nodes
+    if self.ETransmission == "OFF":
+        nodes['Control Transmission Seam Blending'].inputs[1].default_value = 1
+        nodes['Control Transmission Mask'].inputs[0].default_value = 1
+        nodes['Control Transmission Pre Final'].inputs[1].default_value = 1
+    else:
+        nodes['Control Transmission Seam Blending'].inputs[1].default_value = 0
+        nodes['Control Transmission Mask'].inputs[0].default_value = 0
+        nodes['Control Transmission Pre Final'].inputs[1].default_value = 0
                 
 def updateVTransmissionColor(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Transmission Color"].outputs["Color"].default_value = self.VTransmissionColor
+    mat = bpy.context.active_object.active_material
+    mat["VTransmissionColor"] = self.VTransmissionColor
+    mat.node_tree.nodes["Transmission Color"].outputs["Color"].default_value = self.VTransmissionColor
             
 def updateFTransmissionShadowBrightness(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes['Transmission Shadow Brightness'].outputs["Value"].default_value = self.FTransmissionShadowBrightness
+    mat = bpy.context.active_object.active_material
+    mat["FTransmissionShadowBrightness"] = self.FTransmissionShadowBrightness
+    mat.node_tree.nodes['Transmission Shadow Brightness'].outputs["Value"].default_value = self.FTransmissionShadowBrightness
             
 def updateFTransmissionViewDependency(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Transmission View Dependency"].outputs["Value"].default_value = self.FTransmissionViewDependency
+    mat = bpy.context.active_object.active_material
+    mat["FTransmissionViewDependency"] = self.FTransmissionViewDependency
+    mat.node_tree.nodes["Transmission View Dependency"].outputs["Value"].default_value = self.FTransmissionViewDependency
             
 def updateEBranchSeamSmoothing(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["EBranchSeamSmoothing"] = self.EBranchSeamSmoothing
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        weight_mult_output = nodes['Branch Seam Weight Mult'].outputs['Value']
-        while weight_mult_output.links:
-            links.remove(weight_mult_output.links[0])
-        if self.EBranchSeamSmoothing in ["OFF__X__ON", "ON"]:
-            links.new(weight_mult_output, nodes['Mix Diffuse Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Diffuse Alpha Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Normal Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Normal Alpha Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Detail Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Detail Alpha Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Detail Normal Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Detail Normal Alpha Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Specular Seam Blending'].inputs["Fac"])
-            links.new(weight_mult_output, nodes['Mix Specular Alpha Seam Blending'].inputs["Fac"])
+    mat = bpy.context.active_object.active_material
+    mat["EBranchSeamSmoothing"] = self.EBranchSeamSmoothing
+    nodes = mat.node_tree.nodes
+    if self.EBranchSeamSmoothing == "OFF":
+        nodes['Control Branch Seam Smoothing'].inputs[1].default_value = 1
+    else:
+        nodes['Control Branch Seam Smoothing'].inputs[1].default_value = 0
                 
 def updateFBranchSeamWeight(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Branch Seam Weight"].outputs["Value"].default_value = self.FBranchSeamWeight
+    mat = bpy.context.active_object.active_material
+    mat["FBranchSeamWeight"] = self.FBranchSeamWeight
+    mat.node_tree.nodes["Branch Seam Weight"].outputs["Value"].default_value = self.FBranchSeamWeight
             
 def updateEFaceCulling(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        mat["EFaceCulling"] = self.EFaceCulling
-        if self.EFaceCulling == "BACK":
-            mat.use_backface_culling = True
-        else:
-            mat.use_backface_culling = False
+    mat = bpy.context.active_object.active_material
+    mat["EFaceCulling"] = self.EFaceCulling
+    if self.EFaceCulling == "BACK":
+        mat.use_backface_culling = True
+    else:
+        mat.use_backface_culling = False
                 
 def updateBBlending(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BBlending"] = self.BBlending
+    bpy.context.active_object.active_material["BBlending"] = self.BBlending
             
 def updateEAmbientImageLighting(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["EAmbientImageLighting"] = self.EAmbientImageLighting
+    bpy.context.active_object.active_material["EAmbientImageLighting"] = self.EAmbientImageLighting
             
 def updateEHueVariation(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["EHueVariation"] = self.EHueVariation
+    bpy.context.active_object.active_material["EHueVariation"] = self.EHueVariation
             
 def updateEFogCurve(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["EFogCurve"] = self.EFogCurve
+    bpy.context.active_object.active_material["EFogCurve"] = self.EFogCurve
             
 def updateEFogColorStyle(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["EFogColorStyle"] = self.EFogColorStyle
+    bpy.context.active_object.active_material["EFogColorStyle"] = self.EFogColorStyle
             
 def updateBCastsShadows(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        mat = ob.active_material
-        tree = mat.node_tree
-        links = tree.links
-        nodes = tree.nodes
-        input1 = nodes['Disable Shadow'].inputs[0]
-        while input1.links:
-            links.remove(input1.links[0])
-        if not self.BCastsShadows:
-            links.new(nodes['Light Path'].outputs["Is Shadow Ray"], input1)
+    mat = bpy.context.active_object.active_material
+    mat["BCastsShadows"] = self.BCastsShadows
+    mat.node_tree.nodes['Control Cast Shadows'].inputs[1].default_value = self.BCastsShadows
                 
 def updateBReceivesShadows(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BReceivesShadows"] = self.BReceivesShadows
+    bpy.context.active_object.active_material["BReceivesShadows"] = self.BReceivesShadows
             
 def updateBShadowSmoothing(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BShadowSmoothing"] = self.BShadowSmoothing
+    bpy.context.active_object.active_material["BShadowSmoothing"] = self.BShadowSmoothing
     
 def updateFAlphaScalar(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material.node_tree.nodes["Alpha Scalar"].outputs["Value"].default_value = self.FAlphaScalar
+    mat = bpy.context.active_object.active_material
+    mat["FAlphaScalar"] = self.FAlphaScalar
+    mat.node_tree.nodes["Alpha Scalar"].outputs["Value"].default_value = self.FAlphaScalar
             
 def updateEWindLod(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["EWindLod"] = self.EWindLod
+    bpy.context.active_object.active_material["EWindLod"] = self.EWindLod
             
 def updateBBranchesPresent(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BBranchesPresent"] = self.BBranchesPresent
+    bpy.context.active_object.active_material["BBranchesPresent"] = self.BBranchesPresent
         
 def updateBFrondsPresent(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BFrondsPresent"] = self.BFrondsPresent
+    bpy.context.active_object.active_material["BFrondsPresent"] = self.BFrondsPresent
             
 def updateBLeavesPresent(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BLeavesPresent"] = self.BLeavesPresent
+    bpy.context.active_object.active_material["BLeavesPresent"] = self.BLeavesPresent
             
 def updateBFacingLeavesPresent(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BFacingLeavesPresent"] = self.BFacingLeavesPresent
+    bpy.context.active_object.active_material["BFacingLeavesPresent"] = self.BFacingLeavesPresent
             
 def updateBRigidMeshesPresent(self, context):
-    ob = bpy.context.active_object
-    if "SpeedTreeTag" in ob.data:
-        ob.active_material["BRigidMeshesPresent"] = self.BRigidMeshesPresent
+    bpy.context.active_object.active_material["BRigidMeshesPresent"] = self.BRigidMeshesPresent
      
 PROPS_Material_Panel = [
 ("diffuseTexture", PointerProperty(
