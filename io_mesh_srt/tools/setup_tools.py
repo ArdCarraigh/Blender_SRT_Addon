@@ -77,7 +77,8 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     # Deal with Vertex Groups
     #Geometry Type
     if 'GeomType' not in obj.vertex_groups:
-        v_group = obj.vertex_groups.new(name="GeomType")
+        obj.vertex_groups.new(name="GeomType")
+    v_group = obj.vertex_groups["GeomType"]
     if vertex_data and "geometry_type_hint" in vertex_data:
         geom_types = vertex_data["geometry_type_hint"]
         geom_types = (geom_types + 1) * 0.2

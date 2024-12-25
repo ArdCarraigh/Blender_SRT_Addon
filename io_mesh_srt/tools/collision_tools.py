@@ -40,7 +40,6 @@ def remove_srt_sphere(context, index):
         if not collision_coll.objects:
             bpy.data.collections.remove(collision_coll, do_unlink=True)
             
-            
 def add_srt_connection(context, objects):
     collision_coll = GetCollection("Collision Objects")       
                 
