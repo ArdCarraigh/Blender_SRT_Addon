@@ -4,8 +4,8 @@
 bl_info = {
     "name": "SRT Importer/Exporter (.srt/.json)",
     "author": "Ard Carraigh",
-    "version": (4, 2, 1),
-    "blender": (4, 3, 2),
+    "version": (5, 0, 0),
+    "blender": (5, 0, 0),
     "location": "File > Import-Export",
     "description": "Import and export .srt and .json SpeedTree meshes",
     "doc_url": "https://github.com/ArdCarraigh/Blender_SRT_Addon",
@@ -16,7 +16,7 @@ bl_info = {
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.props import StringProperty, IntProperty, PointerProperty
+from bpy.props import StringProperty, IntProperty, PointerProperty, BoolProperty
 from bpy.types import Operator, PropertyGroup
 from io_mesh_srt.import_srt_json import read_srt_json
 from io_mesh_srt.export_srt_json import write_srt_json 
@@ -40,6 +40,12 @@ class ImportSrtJson(Operator, ImportHelper):
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
+    
+    facing_leaves_normals: BoolProperty(
+        name="Fix Facing Leaves Normals",
+        description="Modify the mesh internal data so that Blender doesn't break the facing leaves normals on import. Doesn't affect the end result once exported, except from conserving the original normals",
+        default=False
+    )
 
     # List of operator properties, the attributes will be assigned
     # to the class instance from the operator settings before calling.
@@ -52,7 +58,7 @@ class ImportSrtJson(Operator, ImportHelper):
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
         bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
         
-        read_srt_json(context, self.filepath)
+        read_srt_json(context, self.filepath, self.facing_leaves_normals)
         
         return {'FINISHED'}
     

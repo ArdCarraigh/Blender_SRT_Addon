@@ -12,20 +12,18 @@ from bpy_extras.object_utils import object_data_add
 from io_mesh_srt.tools.collision_tools import add_srt_sphere, add_srt_connection
 from io_mesh_srt.tools.billboard_tools import generate_srt_billboards, generate_srt_horizontal_billboard
 from io_mesh_srt.tools.setup_tools import srt_mesh_setup
-from io_mesh_srt.utils import JoinThem
+from io_mesh_srt.utils import JoinThem, getTextureAttributeName
 
-def read_srt_json(context, filepath):
-    file_name = os.path.splitext(os.path.basename(filepath))[0]
+def read_srt_json(context, filepath, facing_leaves_normals = False):
     if os.path.splitext(os.path.basename(filepath))[1] == ".srt":
         import subprocess
         command = [os.path.dirname(__file__) +"/converter/srt_json_converter.exe", "-d", filepath, "-o", os.path.dirname(filepath)]
         subprocess.run(command)
         filepath += ".json"
     
-    dds_addon = False 
-    if 'blender_dds_addon' in bpy.context.preferences.addons:
-        from blender_dds_addon.ui.import_dds import load_dds
-        dds_addon = True
+    file_name = os.path.splitext(os.path.basename(filepath))[0]
+    if file_name.endswith(".srt"):
+        file_name = file_name[:-4]
     
     with open(filepath, 'r', encoding='utf-8') as file:
         srt = json.load(file)
@@ -116,45 +114,8 @@ def read_srt_json(context, filepath):
             # Set the Textures
             bbMat = srt["Geometry"]["ABillboardRenderStateMain"]
             for k, tex in enumerate(bbMat["ApTextures"]):
-                if not tex:
-                    match k:
-                        case 0:
-                            wm.diffuseTexture = None
-                        case 1:
-                            wm.normalTexture = None
-                        case 2:
-                            wm.detailTexture = None
-                        case 3:
-                            wm.detailNormalTexture = None
-                        case 4:
-                            wm.specularTexture = None
-                else:
-                    tex_path = os.path.dirname(filepath) + "\\" + tex
-                    if os.path.exists(tex_path):
-                        if tex.endswith(".dds") and dds_addon:
-                            image = bpy.data.images.get(tex)
-                            if not image:
-                                image = load_dds(tex_path)
-                                image.name += ".dds"
-                                image.filepath = tex_path
-                            match k:
-                                case 0:
-                                    image.colorspace_settings.name = 'sRGB'
-                                    wm.diffuseTexture = image
-                                case 1:
-                                    image.colorspace_settings.name = 'Non-Color'
-                                    wm.normalTexture = image
-                                case 4:
-                                    image.colorspace_settings.name = 'Non-Color'
-                                    wm.specularTexture = image
-                        else:
-                            match k:
-                                case 0:
-                                    wm.diffuseTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 1:
-                                    wm.normalTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 4:
-                                    wm.specularTexture = bpy.data.images.load(tex_path, check_existing = True)
+                if tex:
+                    setattr(wm, getTextureAttributeName(k), os.path.dirname(filepath) + "\\" + tex)
             
             # Set the Material
             for param in ["ApTextures", "BFadeToBillboard", "BVertBillboard", "BHorzBillboard", "ERenderPass", "SVertexDecl", "PDescription", "PUserData"]:
@@ -222,6 +183,10 @@ def read_srt_json(context, filepath):
                     #Tangents are read-only in Blender, we can't import them
                     if "AMBIENT_OCCLUSION" in attr["properties"]:
                         vert_data["ambient_occlusion"] = vert_data["ambient_occlusion"] / 255
+            
+            # Convert Leaf Card Corner
+            if "leaf_card_corner" in vert_data:
+                vert_data["leaf_card_corner"] = vert_data["leaf_card_corner"][:,[2,0,1]]
 
             # Face indices
             faces = np.array(mesh_call["IndexData"]).reshape(-1,3)
@@ -236,6 +201,14 @@ def read_srt_json(context, filepath):
             # Set Up the SRT Asset
             geom_type = ['0.2', '0.4', '0.6', '0.8', '1.0'][np.argmax([srtMat["BBranchesPresent"], srtMat["BFrondsPresent"], srtMat["BLeavesPresent"], srtMat["BFacingLeavesPresent"], srtMat["BRigidMeshesPresent"]])]
             srt_mesh_setup(bpy.context, obj, geom_type, vert_data)
+            
+            # Alternative normal import if requested
+            grass = srtMat['BUsedAsGrass']
+            facing = srtMat['BFacingLeavesPresent']
+            if facing_leaves_normals and facing and not grass:
+                if "custom_normal" not in mesh.attributes:
+                    mesh.attributes.new("custom_normal", "FLOAT_VECTOR", "POINT")
+                mesh.attributes["custom_normal"].data.foreach_set("vector", vert_data["normals"].flatten())
         
             # Normals
             #bpy.ops.object.mode_set(mode='EDIT', toggle=False)
@@ -246,55 +219,8 @@ def read_srt_json(context, filepath):
             
             # Set the Textures
             for k, tex in enumerate(srtMat["ApTextures"]):
-                if not tex:
-                    match k:
-                        case 0:
-                            wm.diffuseTexture = None
-                        case 1:
-                            wm.normalTexture = None
-                        case 2:
-                            wm.detailTexture = None
-                        case 3:
-                            wm.detailNormalTexture = None
-                        case 4:
-                            wm.specularTexture = None
-                else:
-                    tex_path = os.path.dirname(filepath) + "\\" + tex
-                    if os.path.exists(tex_path):
-                        if tex.endswith(".dds") and dds_addon:
-                            image = bpy.data.images.get(tex)
-                            if not image:
-                                image = load_dds(tex_path)
-                                image.name += ".dds"
-                                image.filepath = tex_path
-                            match k:
-                                case 0:
-                                    image.colorspace_settings.name = 'sRGB'
-                                    wm.diffuseTexture = image
-                                case 1:
-                                    image.colorspace_settings.name = 'Non-Color'
-                                    wm.normalTexture = image
-                                case 2:
-                                    image.colorspace_settings.name = 'sRGB'
-                                    wm.detailTexture = image
-                                case 3:
-                                    image.colorspace_settings.name = 'Non-Color'
-                                    wm.detailNormalTexture = image
-                                case 4:
-                                    image.colorspace_settings.name = 'Non-Color'
-                                    wm.specularTexture = image
-                        else:
-                            match k:
-                                case 0:
-                                    wm.diffuseTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 1:
-                                    wm.normalTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 2:
-                                    wm.detailTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 3:
-                                    wm.detailNormalTexture = bpy.data.images.load(tex_path, check_existing = True)
-                                case 4:
-                                    wm.specularTexture = bpy.data.images.load(tex_path, check_existing = True)
+                if tex:
+                    setattr(wm, getTextureAttributeName(k), os.path.dirname(filepath) + "\\" + tex)
             
             # Set the Material
             for param in ["ApTextures", "BFadeToBillboard", "BVertBillboard", "BHorzBillboard", "ERenderPass", "SVertexDecl", "PDescription", "PUserData"]:
@@ -305,7 +231,18 @@ def read_srt_json(context, filepath):
                 
             for k in srtMat:
                 setattr(wm, k, srtMat[k])
+                
+            # Determine if Caps
+            if srtMat['BFrondsPresent'] and not grass and srtMat['EDetailLayer'] in ['ON', "OFF__X__ON"]:
+                setattr(wm, 'BCaps', True)
             
+            # Ensure that grasses get imported with only one material    
+            if grass:
+                break
+            
+        # Ensure that grasses get imported with only one lod
+        if grass:
+            break
         # Join submeshes under the same LOD
         JoinThem(meshes)
         

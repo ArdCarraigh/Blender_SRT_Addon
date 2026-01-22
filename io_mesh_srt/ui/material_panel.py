@@ -2,7 +2,9 @@
 # ui/material_panel.py
 
 import bpy
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, PointerProperty
+import numpy as np
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, StringProperty
+from io_mesh_srt.utils import GetCollection, importSRTTexture
     
 class SPEEDTREE_UL_materials(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -59,6 +61,14 @@ class SpeedTreeMaterialPanel(bpy.types.Panel):
                     row.prop(wm, "BRigidMeshesPresent", text = "Rigid Meshes", toggle=True)
                     if wm.BRigidMeshesPresent != mat["BRigidMeshesPresent"]:
                         wm.BRigidMeshesPresent = mat["BRigidMeshesPresent"]
+                        
+                    row = layout.row()
+                    row.enabled = (wm.BFrondsPresent and not (wm.BBranchesPresent or wm.BLeavesPresent or wm.BFacingLeavesPresent or wm.BRigidMeshesPresent))
+                    row.prop(wm, "BCaps", text="Is Caps")
+                    if wm.BCaps != mat["BCaps"]:
+                        wm.BCaps = mat["BCaps"]
+                    if wm.BBranchesPresent or wm.BLeavesPresent or wm.BFacingLeavesPresent or wm.BRigidMeshesPresent:
+                        wm.BCaps = False
                     
                     layout.separator()  
                     row = layout.row(align = True)
@@ -94,7 +104,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     row = layout.row()
                     box = row.box()
                     box.label(text="Diffuse Texture")
-                    box.template_ID(wm, "diffuseTexture", new="image.new", open="image.open")
+                    box.prop(wm, "diffuseTexture", text="")
                     if wm.diffuseTexture != mat["diffuseTexture"]:
                         wm.diffuseTexture = mat["diffuseTexture"]
                         
@@ -106,7 +116,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     row = layout.row()
                     box = row.box()
                     box.label(text="Normal Texture")
-                    box.template_ID(wm, "normalTexture", new="image.new", open="image.open")
+                    box.prop(wm, "normalTexture", text="")
                     if wm.normalTexture != mat["normalTexture"]:
                         wm.normalTexture = mat["normalTexture"]
                             
@@ -114,7 +124,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     row = layout.row()
                     box = row.box()
                     box.label(text="Specular Texture")
-                    box.template_ID(wm, "specularTexture", new="image.new", open="image.open")
+                    box.prop(wm, "specularTexture", text="")
                     if wm.specularTexture != mat["specularTexture"]:
                         wm.specularTexture = mat["specularTexture"]
                     
@@ -122,7 +132,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     row = layout.row()
                     box = row.box()
                     box.label(text = "Branch Seam Smoothing")
-                    box.enabled = wm.BBranchesPresent
+                    box.enabled = (wm.BBranchesPresent and not (wm.BFrondsPresent or wm.BLeavesPresent or wm.BFacingLeavesPresent or wm.BRigidMeshesPresent))
                     box.prop(wm, "EBranchSeamSmoothing", text = "")
                     if wm.EBranchSeamSmoothing != mat["EBranchSeamSmoothing"]:
                         wm.EBranchSeamSmoothing = mat["EBranchSeamSmoothing"]
@@ -137,7 +147,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     row = layout.row()
                     box = row.box()
                     box.label(text = "Detail Layer")
-                    box.enabled = wm.BBranchesPresent
+                    box.enabled = ((wm.BBranchesPresent and not (wm.BFrondsPresent or wm.BLeavesPresent or wm.BFacingLeavesPresent or wm.BRigidMeshesPresent)) or wm.BCaps)
                     box.prop(wm, "EDetailLayer", text = "")
                     if wm.EDetailLayer != mat["EDetailLayer"]:
                         wm.EDetailLayer = mat["EDetailLayer"]
@@ -146,7 +156,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     box_row.label(text = "Detail Texture")
                     box_row = box.row()
                     box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
-                    box_row.template_ID(wm, "detailTexture", new="image.new", open="image.open")
+                    box_row.prop(wm, "detailTexture", text="")
                     if wm.detailTexture != mat["detailTexture"]:
                         wm.detailTexture = mat["detailTexture"]
                         
@@ -154,7 +164,7 @@ class SpeedTreeTexturePanel(bpy.types.Panel):
                     box_row.label(text = "Detail Normal Texture")
                     box_row = box.row()
                     box_row.enabled = wm.EDetailLayer in ["OFF__X__ON", "ON"]
-                    box_row.template_ID(wm, "detailNormalTexture", new="image.new", open="image.open")
+                    box_row.prop(wm, "detailNormalTexture", text="")
                     if wm.detailNormalTexture != mat["detailNormalTexture"]:
                         wm.detailNormalTexture = mat["detailNormalTexture"]
                                
@@ -185,7 +195,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                     box_row = box.row()
                     box_row.label(text="Diffuse Color")
                     box_row.prop(wm, "VDiffuseColor", text = "")
-                    if wm.VDiffuseColor != mat["VDiffuseColor"]:
+                    if any(np.array(wm.VDiffuseColor) != np.array(mat["VDiffuseColor"])):
                         wm.VDiffuseColor = mat["VDiffuseColor"]
                         
                     box.prop(wm, "FDiffuseScalar", text = "Diffuse Scalar")
@@ -198,7 +208,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                     box_row = box.row()
                     box_row.label(text="Ambient Color")
                     box_row.prop(wm, "VAmbientColor", text = '')
-                    if wm.VAmbientColor != mat["VAmbientColor"]:
+                    if any(np.array(wm.VAmbientColor) != np.array(mat["VAmbientColor"])):
                         wm.VAmbientColor = mat["VAmbientColor"]
                     
                     box_row = box.row()
@@ -226,7 +236,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                     box_row.label(text="Specular Color")
                     box_row.enabled = wm.ESpecular in ["OFF__X__ON", "ON"]
                     box_row.prop(wm, "VSpecularColor", text = '')
-                    if wm.VSpecularColor != mat["VSpecularColor"]:
+                    if any(np.array(wm.VSpecularColor) != np.array(mat["VSpecularColor"])):
                         wm.VSpecularColor = mat["VSpecularColor"]
                         
                     box_row = box.row()
@@ -247,7 +257,7 @@ class SpeedTreeColorSetPanel(bpy.types.Panel):
                     box_row.label(text="Transmission Color")
                     box_row.enabled = wm.ETransmission in ["OFF__X__ON", "ON"]
                     box_row.prop(wm, "VTransmissionColor", text = '')
-                    if wm.VTransmissionColor != mat["VTransmissionColor"]:
+                    if any(np.array(wm.VTransmissionColor) != np.array(mat["VTransmissionColor"])):
                         wm.VTransmissionColor = mat["VTransmissionColor"]
                         
                     box_row = box.row()
@@ -367,52 +377,63 @@ class SpeedTreeOthersPanel(bpy.types.Panel):
 def updateDiffuseTexture(self, context):
     mat = bpy.context.active_object.active_material
     mat["diffuseTexture"] = self.diffuseTexture
+    image = importSRTTexture(self.diffuseTexture)                   
     nodes = mat.node_tree.nodes
-    nodes["Diffuse Texture"].image = self.diffuseTexture
-    nodes["Branch Seam Diffuse Texture"].image = self.diffuseTexture
-    if self.diffuseTexture:
+    nodes["Diffuse Texture"].image = image
+    nodes["Branch Seam Diffuse Texture"].image = image
+    if image:
         nodes["Diffuse Texture"].image.colorspace_settings.name='sRGB'
         nodes["Branch Seam Diffuse Texture"].image.colorspace_settings.name='sRGB'
                 
 def updateNormalTexture(self, context):
     mat = bpy.context.active_object.active_material
     mat["normalTexture"] = self.normalTexture
+    image = importSRTTexture(self.normalTexture)    
     nodes = mat.node_tree.nodes
-    nodes["Normal Texture"].image = self.normalTexture
-    nodes["Branch Seam Normal Texture"].image = self.normalTexture
-    if self.normalTexture:
+    nodes["Normal Texture"].image = image
+    nodes["Branch Seam Normal Texture"].image = image
+    if image:
         nodes["Normal Texture"].image.colorspace_settings.name='Non-Color'
         nodes["Branch Seam Normal Texture"].image.colorspace_settings.name='Non-Color'
                 
 def updateDetailTexture(self, context):
     mat = bpy.context.active_object.active_material
     mat["detailTexture"] = self.detailTexture
+    image = importSRTTexture(self.detailTexture)
     nodes = mat.node_tree.nodes
-    nodes["Detail Texture"].image = self.detailTexture
-    nodes["Branch Seam Detail Texture"].image = self.detailTexture
-    if self.detailTexture:
+    nodes["Detail Texture"].image = image
+    nodes["Branch Seam Detail Texture"].image = image
+    if image:
         nodes["Detail Texture"].image.colorspace_settings.name='sRGB'
         nodes["Branch Seam Detail Texture"].image.colorspace_settings.name='sRGB'
                 
 def updateDetailNormalTexture(self, context):
     mat = bpy.context.active_object.active_material
     mat["detailNormalTexture"] = self.detailNormalTexture
+    image = importSRTTexture(self.detailNormalTexture)
     nodes = mat.node_tree.nodes
-    nodes["Detail Normal Texture"].image = self.detailNormalTexture
-    nodes["Branch Seam Detail Normal Texture"].image = self.detailNormalTexture
-    if self.detailNormalTexture:
+    nodes["Detail Normal Texture"].image = image
+    nodes["Branch Seam Detail Normal Texture"].image = image
+    if image:
         nodes["Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
         nodes["Branch Seam Detail Normal Texture"].image.colorspace_settings.name='Non-Color'
                 
 def updateSpecularTexture(self, context):
     mat = bpy.context.active_object.active_material
     mat["specularTexture"] = self.specularTexture
+    image = importSRTTexture(self.specularTexture)
     nodes = mat.node_tree.nodes 
-    nodes["Specular Texture"].image = self.specularTexture
-    nodes["Branch Seam Specular Texture"].image = self.specularTexture
-    if self.specularTexture:
+    nodes["Specular Texture"].image = image
+    nodes["Branch Seam Specular Texture"].image = image
+    if image:
         nodes["Specular Texture"].image.colorspace_settings.name='Non-Color'
         nodes["Branch Seam Specular Texture"].image.colorspace_settings.name='Non-Color'
+    if self.specularTexture:
+        nodes["Control Specular Texture"].inputs["Factor"].default_value = 0
+        nodes["Control Transmission Texture"].inputs["Factor"].default_value = 0
+    else:
+        nodes["Control Specular Texture"].inputs["Factor"].default_value = 1
+        nodes["Control Transmission Texture"].inputs["Factor"].default_value = 1
             
 def updateVAmbientColor(self, context):
     mat = bpy.context.active_object.active_material
@@ -474,6 +495,10 @@ def updateESpecular(self, context):
     else:
         nodes['Control Specular'].inputs[0].default_value = 0
         nodes['Control Shininess'].inputs[1].default_value = 0
+        if mat["specularTexture"]:
+            nodes["Control Specular Texture"].inputs["Factor"].default_value = 0
+        else:
+            nodes["Control Specular Texture"].inputs["Factor"].default_value = 1
                 
 def updateFShininess(self, context):
     mat = bpy.context.active_object.active_material
@@ -497,6 +522,10 @@ def updateETransmission(self, context):
         nodes['Control Transmission Seam Blending'].inputs[1].default_value = 0
         nodes['Control Transmission Mask'].inputs[0].default_value = 0
         nodes['Control Transmission Pre Final'].inputs[1].default_value = 0
+        if mat["specularTexture"]:
+            nodes["Control Transmission Texture"].inputs["Factor"].default_value = 0
+        else:
+            nodes["Control Transmission Texture"].inputs["Factor"].default_value = 1
                 
 def updateVTransmissionColor(self, context):
     mat = bpy.context.active_object.active_material
@@ -511,7 +540,7 @@ def updateFTransmissionShadowBrightness(self, context):
 def updateFTransmissionViewDependency(self, context):
     mat = bpy.context.active_object.active_material
     mat["FTransmissionViewDependency"] = self.FTransmissionViewDependency
-    mat.node_tree.nodes["Transmission View Dependency"].outputs["Value"].default_value = self.FTransmissionViewDependency
+    mat.node_tree.nodes["Transmission View Dependency"].inputs[0].default_value = 1 - self.FTransmissionViewDependency
             
 def updateEBranchSeamSmoothing(self, context):
     mat = bpy.context.active_object.active_material
@@ -583,34 +612,50 @@ def updateBFacingLeavesPresent(self, context):
             
 def updateBRigidMeshesPresent(self, context):
     bpy.context.active_object.active_material["BRigidMeshesPresent"] = self.BRigidMeshesPresent
+    
+def updateBCaps(self, context):
+    mat = bpy.context.active_object.active_material
+    nodes = mat.node_tree.nodes
+    mat["BCaps"] = self.BCaps
+    if self.BCaps:
+        nodes["UV Map.002"].uv_map = "DiffuseUV"
+        nodes["UV Map.003"].uv_map = "SeamDiffuseUV"
+    else:
+        nodes["UV Map.002"].uv_map = "DetailUV"
+        nodes["UV Map.003"].uv_map = "SeamDetailUV"   
      
 PROPS_Material_Panel = [
-("diffuseTexture", PointerProperty(
-        type=bpy.types.Image,
+("diffuseTexture", StringProperty(
+        subtype='FILE_PATH',
+        default = '',
         update = updateDiffuseTexture,
         name="Diffuse Texture",
         description="Set the diffuse texture used by the selected material"
     )),
-("normalTexture", PointerProperty(
-        type=bpy.types.Image,
+("normalTexture", StringProperty(
+        subtype='FILE_PATH',
+        default = '',
         update = updateNormalTexture,
         name="Normal Texture",
         description="Set the normal texture used by the selected material"
     )),
-("detailTexture", PointerProperty(
-        type=bpy.types.Image,
+("detailTexture", StringProperty(
+        subtype='FILE_PATH',
+        default = '',
         update = updateDetailTexture,
         name="Detail Texture",
         description="Set the detail texture used by the selected material"
     )),
-("detailNormalTexture", PointerProperty(
-        type=bpy.types.Image,
+("detailNormalTexture", StringProperty(
+        subtype='FILE_PATH',
+        default = '',
         update = updateDetailNormalTexture,
         name="Detail Normal Texture",
         description="Set the detail normal texture used by the selected material"
     )),
-("specularTexture", PointerProperty(
-        type=bpy.types.Image,
+("specularTexture", StringProperty(
+        subtype='FILE_PATH',
+        default = '',
         update = updateSpecularTexture,
         name="Specular Texture",
         description="Set the specular texture used by the selected material"
@@ -867,6 +912,11 @@ PROPS_Material_Panel = [
         name="Rigid Meshes Present",
         update = updateBRigidMeshesPresent,
         description="Indicate presence of rigid meshes geometry"
+    )),
+("BCaps", BoolProperty(
+        name="Caps",
+        update = updateBCaps,
+        description="Indicate whether to consider as cap geometry. In essence, it allows fronds geometry to use a detail texture"
     )),
 ('SpeedTreeMaterialSubPanel', EnumProperty(
         name="SpeedTree Material SubPanel",

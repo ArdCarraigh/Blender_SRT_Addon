@@ -2,7 +2,7 @@
 
 ## Content of the addon
 
-An addon made to import, create, edit and export .srt meshes (Real Time SpeedTree Meshes) in Blender, for free. Developed for Blender 4.3.2, other versions are not tested.
+An addon made to import, create, edit and export .srt meshes (Real Time SpeedTree Meshes) in Blender, for free. Developed for Blender 5.0.X, other versions are not tested.
 
 The main features are:
 - Supports all geometry types except rigid meshes.

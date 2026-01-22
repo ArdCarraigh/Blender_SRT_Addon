@@ -219,7 +219,7 @@ def srt_mesh_setup(context, obj, geom_type = '0', vertex_data = None):
     if 'leafCardCorner' not in mesh.attributes:
         attrib = mesh.attributes.new(name='leafCardCorner', type='FLOAT_VECTOR', domain='POINT')
         if vertex_data and "leaf_card_corner" in vertex_data:
-            leaf_card_corners = vertex_data["leaf_card_corner"][:,[2,0,1]].flatten()
+            leaf_card_corners = vertex_data["leaf_card_corner"].flatten()
             attrib.data.foreach_set('vector', leaf_card_corners)
         
     if 'leafCardLodScalar' not in mesh.attributes:

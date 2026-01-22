@@ -25,7 +25,7 @@ class SRTBillboardTextureGeneration(Operator):
         dds_dxgi = None
         if wm.EBillboardTextureFormat == 'DDS':
             dds_dxgi = wm.EDxgiFormat
-        generate_srt_billboard_texture(context, wm.IBillboardTextureResolution, wm.IBillboardTextureMargin, wm.IBillboardTextureDilation, wm.EBillboardTextureFormat, dds_dxgi, wm.BApplyBillboardTexture, wm.BUseCustomOutputBillboardTexture, wm.SOutputBillboardTexture)
+        generate_srt_billboard_texture(context, wm.IBillboardTextureResolution, wm.IBillboardTextureMargin, wm.IBillboardTextureDilation, wm.EShadowsMethod, wm.EBillboardTextureFormat, dds_dxgi, wm.BApplyBillboardTexture, wm.BUseCustomOutputBillboardTexture, wm.SOutputBillboardTexture)
         return {'FINISHED'}
     
 class SpeedTreeBillboardsPanel(bpy.types.Panel):
@@ -111,17 +111,19 @@ class SpeedTreeBillboardsPanel(bpy.types.Panel):
                 box_row = box.row()
                 box_row.prop(wm, "IBillboardTextureDilation", text = "Dilation")
                 box_row = box.row()
-                box_row.prop(wm, "EBillboardTextureFormat", text="File Format")
+                box_row.prop(wm, "EShadowsMethod", text="Shadows")
+                box_row = box.row()
+                box_row.prop(wm, "EBillboardTextureFormat", text="Format")
                 if wm.EBillboardTextureFormat == 'DDS':
                     box_row = box.row()
-                    box_row.prop(wm, "EDxgiFormat")
+                    box_row.prop(wm, "EDxgiFormat", text = "DXGI Format")
                 box_row = box.row()
                 box_row.prop(wm, "BApplyBillboardTexture", text="Apply Generated Textures")
                 box_row = box.row()
                 box_row.prop(wm, "BUseCustomOutputBillboardTexture", text="Use Custom Output Path")
                 box_row = box.row()
                 box_row.enabled = wm.BUseCustomOutputBillboardTexture
-                box_row.prop(wm, "SOutputBillboardTexture", text="Output Path")
+                box_row.prop(wm, "SOutputBillboardTexture", text="Output Directory")
                 box_row = box.row()
                 box_row.operator(SRTBillboardTextureGeneration.bl_idname, text = "Generate Texture", icon = "TEXTURE")
             
@@ -354,6 +356,15 @@ PROPS_Billboard_Panel = [
         min = 0,
         subtype="PIXEL"
     )),
+("EShadowsMethod", EnumProperty(
+        name = "Shadows Generation Method",
+        description = "Set the method for generating shadows baked in the billboard diffuse texture",
+        default = '0',
+        items =(
+            ('0', "AUTO", "Automatically detects the supposedly best option to generate shadows. May not be the true best option"),
+            ('1', "SHELL", "Generates shadows using a shell approximation of the mesh using SDF. Best for trees with dense crowns"),
+            ('2', "MESH", "Generates shadows using the original mesh as is. Best for dry/dead trees"))
+    )), 
 ("EBillboardTextureFormat", EnumProperty(
         name = "Generated Billboard Texture Format",
         description = "Set the format of the generated billboard textures",

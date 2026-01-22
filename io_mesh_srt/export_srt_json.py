@@ -52,19 +52,20 @@ def write_srt_json(context, filepath):
                 if len(collisionObject.data.materials) <= 1:
                     pos, radius = getSphere(collisionObject)
                     srtCollision["m_vCenter1"] = dict(zip(['x','y','z'], pos))
-                    srtCollision["m_fRadius"] = radius
+                    srtCollision["m_vCenter2"] = srtCollision["m_vCenter1"]
+                    srtCollision["m_fRadius"] = float(radius)
                     
                 else:
                     selectOnly(collisionObject)
                     bpy.ops.mesh.separate(type='MATERIAL')
                     coll_meshes = []
                     for subcollisionObject in collisionObjects:
-                        if collisionObject.name in subcollisionObject.name:
+                        if re.sub(r'\.[0-9]*$', '', collisionObject.name) in subcollisionObject.name:
                             coll_meshes.append(subcollisionObject)
                             if "Material_Sphere1" in subcollisionObject.data.materials:
                                 pos, radius = getSphere(subcollisionObject)
                                 srtCollision["m_vCenter1"] = dict(zip(['x','y','z'], pos))
-                                srtCollision["m_fRadius"] = radius
+                                srtCollision["m_fRadius"] = float(radius)
                             if "Material_Sphere2" in subcollisionObject.data.materials:
                                 pos, radius = getSphere(subcollisionObject, False)
                                 srtCollision["m_vCenter2"] = dict(zip(['x','y','z'], pos))
@@ -74,7 +75,7 @@ def write_srt_json(context, filepath):
                 srtMain["CollisionObjects"].append(srtCollision)
             
         # Get and Write Vertical Billboards #VerticalBillboards
-        if bb_coll:
+        if bb_coll and not main_coll["BUsedAsGrass"]:
             billboard_uvs = []
             billboard_rotated = []
             billboard_cutout_verts = []
@@ -136,7 +137,7 @@ def write_srt_json(context, filepath):
                                                                     # But remains here in case
                                                                     # I decide to support other
                                                                     # shader generation modes
-        #if horiz_coll:
+        #if horiz_coll and not main_coll["BUsedAsGrass"]:
         #    horiz_bb_verts = []
         #    horiz_bb_uvs = []
         #    horiz_bb = horiz_coll.objects[0]
@@ -197,13 +198,20 @@ def write_srt_json(context, filepath):
                     srtLod = {"PDrawCalls":[]}
                     # Get lodsNum
                     lodsNum += 1
-                    for mesh in objects:
-                        # Prepare Mesh
-                        selectOnly(mesh)
-                        #Edge Split where split normals or uv seam (necessary as these face corner data are stored per vertex in srt)
-                        #SplitMesh(mesh.data)
-                        TriangulateActiveMesh()
-                        bpy.ops.mesh.separate(type='MATERIAL')
+                    # Join meshes
+                    if len(objects) > 1:
+                        JoinThem(objects)
+                    # Prepare Mesh
+                    obj = objects[0]
+                    selectOnly(obj)
+                    #Edge Split where split normals or uv seam (necessary as these face corner data are stored per vertex in srt)
+                    #SplitMesh(mesh.data)
+                    TriangulateActiveMesh()
+                    bpy.ops.object.mode_set(mode='EDIT')
+                    bpy.ops.mesh.select_all(action="SELECT")
+                    bpy.ops.mesh.separate(type='MATERIAL') #Separate in Edit Mode to avoid messing up normals
+                    bpy.ops.mesh.select_all(action="DESELECT")
+                    bpy.ops.object.mode_set(mode='OBJECT')
                         
                     meshes = []
                     for mesh in objects:
@@ -223,10 +231,6 @@ def write_srt_json(context, filepath):
                                 mat["BLeavesPresent"] = True
                                 mat["BFacingLeavesPresent"] = True
                                 mat["BRigidMeshesPresent"] = True
-                                
-                            # Compute Tangents
-                            mesh_data.uv_layers.active = mesh_data.uv_layers["DiffuseUV"]
-                            mesh_data.calc_tangents()
 
                             # Faces
                             n_indices = len(mesh_data.polygons) * 3
@@ -263,12 +267,6 @@ def write_srt_json(context, filepath):
                             mesh_data.attributes["leafAnchorPoint"].data.foreach_get("vector", leaf_anchor_points)
                             leaf_anchor_points = leaf_anchor_points.reshape(-1,3).tolist()
                             
-                            # Normals
-                            normals = np.round((np.array(GetLoopDataPerVertex(mesh_data, "NORMAL")) / 2 + 0.5) * 255).tolist()
-                            
-                            # Tangents
-                            tangents = np.round((np.array(GetLoopDataPerVertex(mesh_data, "TANGENT")) / 2 + 0.5) * 255).tolist()
-                            
                             # Diffuse UV
                             uvs_diff = GetLoopDataPerVertex(mesh_data, "UV", "DiffuseUV")
                             
@@ -280,6 +278,14 @@ def write_srt_json(context, filepath):
                             
                             # Branch Seam Detail UV
                             branches_seam_det = GetLoopDataPerVertex(mesh_data, "UV", "SeamDetailUV")
+                            
+                            # Normals
+                            normals = np.round((np.array(GetLoopDataPerVertex(mesh_data, "NORMAL")) / 2 + 0.5) * 255).tolist()
+                            
+                            # Tangents
+                            mesh_data.uv_layers.active = mesh_data.uv_layers["DiffuseUV"]
+                            mesh_data.calc_tangents()
+                            tangents = np.round((np.array(GetLoopDataPerVertex(mesh_data, "TANGENT")) / 2 + 0.5) * 255).tolist()
                             
                             #Add values if missing just to make the exporter more robust
                             checkWeightPaint(mesh, mesh_vertices[0].groups[mesh.vertex_groups["GeomType"].index].weight, mesh_vertices[0].groups[mesh.vertex_groups["WindFlag"].index].weight)

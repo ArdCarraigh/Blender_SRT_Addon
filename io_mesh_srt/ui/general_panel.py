@@ -132,8 +132,8 @@ class SpeedTreeGeneralSettings(bpy.types.Panel):
                         nLod += 1
                         if 'LOD0' in col.name:
                             for obj in col.objects:
-                                for mat in obj.data.materials:
-                                    nMat += 1
+                                if obj.type == 'MESH':
+                                    nMat += len(obj.data.materials)
                         
                 row = layout.row()
                 box = row.box()

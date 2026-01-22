@@ -5,7 +5,6 @@ import bpy
 import numpy as np
 import re
 import os
-import json
 from math import isnan, isinf
 from copy import deepcopy
 
@@ -271,35 +270,61 @@ def getMaterial(main_coll, mat, srtRender):
     
     #Textures
     texture_names = []
-    diff_tex = mat["diffuseTexture"]
-    norm_tex = mat["normalTexture"]
-    det_tex = mat["detailTexture"]
-    det_norm_tex = mat["detailNormalTexture"]
-    spec_tex = mat["specularTexture"]
+    diff_tex = os.path.basename(mat["diffuseTexture"])
+    norm_tex = os.path.basename(mat["normalTexture"])
+    det_tex = os.path.basename(mat["detailTexture"])
+    det_norm_tex = os.path.basename(mat["detailNormalTexture"])
+    spec_tex = os.path.basename(mat["specularTexture"])
+    
     if diff_tex:
-        diff_tex_name = diff_tex.name
-        srtRender["ApTextures"][0] = diff_tex_name
-        texture_names.append(diff_tex_name)
+        srtRender["ApTextures"][0] = diff_tex
+        texture_names.append(diff_tex)
         
     if norm_tex:
-        norm_tex_name = norm_tex.name
-        srtRender["ApTextures"][1] = norm_tex_name
-        texture_names.append(norm_tex_name)
+        srtRender["ApTextures"][1] = norm_tex
+        texture_names.append(norm_tex)
             
     if det_tex:
-        det_tex_name = det_tex.name
-        srtRender["ApTextures"][2] = det_tex_name
-        texture_names.append(det_tex_name)
+        srtRender["ApTextures"][2] = det_tex
+        texture_names.append(det_tex)
         
     if det_norm_tex:
-        det_norm_tex_name = det_norm_tex.name
-        srtRender["ApTextures"][3] = det_norm_tex_name
-        texture_names.append(det_norm_tex_name)
+        srtRender["ApTextures"][3] = det_norm_tex
+        texture_names.append(det_norm_tex)
         
     if spec_tex:
-        spec_tex_name = spec_tex.name
-        srtRender["ApTextures"][4] = spec_tex_name
-        srtRender["ApTextures"][5] = spec_tex_name
-        texture_names.append(spec_tex_name)
+        srtRender["ApTextures"][4] = spec_tex
+        srtRender["ApTextures"][5] = spec_tex
+        texture_names.append(spec_tex)
         
     return texture_names
+
+def getTextureAttributeName(k):
+    match k:
+        case 0:
+            return "diffuseTexture"
+        case 1:
+            return "normalTexture"
+        case 2:
+            return "detailTexture"
+        case 3:
+            return "detailNormalTexture"
+        case 4:
+            return "specularTexture"
+        case _:
+            return ""
+
+def importSRTTexture(path):
+    image = None
+    if os.path.exists(path):
+        texName = os.path.basename(path)
+        if texName.endswith(".dds") and 'blender_dds_addon' in bpy.context.preferences.addons:
+            image = bpy.data.images.get(texName)
+            if not image or image.filepath != path:
+                from blender_dds_addon.ui.import_dds import load_dds
+                image = load_dds(path)
+                image.name += ".dds"
+                image.filepath = path
+        else:
+            image = bpy.data.images.load(path, check_existing = True)
+    return image
